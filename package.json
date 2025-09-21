@@ -1,0 +1,19 @@
+{
+  "name": "agri-acoustic-sentinel",
+  "version": "1.0.0",
+  "description": "Bioacoustic monitoring system for crop health using AI-powered pest detection",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install"
+  },
+  "keywords": ["agriculture", "bioacoustics", "AI", "pest-detection", "replicate"],
+  "author": "Agri-Acoustic Sentinel Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
