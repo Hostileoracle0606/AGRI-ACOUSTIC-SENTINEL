@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Connection Test</title>
+</head>
+<body>
+    <h1>🔌 Connection Test</h1>
+    <div id="status">Testing...</div>
+    
+    <script>
+        const status = document.getElementById('status');
+        
+        // Test 1: Backend API
+        fetch('http://localhost:5000/api/field-data')
+            .then(response => {
+                if (response.ok) {
+                    status.innerHTML += '<br>✅ Backend API: Working';
+                    return response.json();
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            })
+            .then(data => {
+                status.innerHTML += `<br>📊 Data: ${Object.keys(data.currentReadings).length} microphones`;
+            })
+            .catch(error => {
+                status.innerHTML += `<br>❌ Backend API: ${error.message}`;
+            });
+        
+        // Test 2: Socket.IO
+        const script = document.createElement('script');
+        script.src = 'https://cdn.socket.io/4.7.4/socket.io.min.js';
+        script.onload = () => {
+            try {
+                const socket = io('http://localhost:5000');
+                
+                socket.on('connect', () => {
+                    status.innerHTML += '<br>✅ Socket.IO: Connected';
+                });
+                
+                socket.on('connect_error', (error) => {
+                    status.innerHTML += `<br>❌ Socket.IO: ${error.message}`;
+                });
+                
+                setTimeout(() => {
+                    if (!socket.connected) {
+                        status.innerHTML += '<br>⏳ Socket.IO: Timeout';
+                    }
+                }, 3000);
+                
+            } catch (error) {
+                status.innerHTML += `<br>❌ Socket.IO: ${error.message}`;
+            }
+        };
+        script.onerror = () => {
+            status.innerHTML += '<br>❌ Socket.IO: Library load failed';
+        };
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>
