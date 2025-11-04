@@ -69,6 +69,8 @@ EXPOSE 5000
 # Environment variables
 ENV NODE_ENV=production
 ENV PYTHONUNBUFFERED=1
+ENV IMAGEBIND_PATH=/app/ImageBind
+ENV PYTHON_PATH=/usr/bin/python3
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
