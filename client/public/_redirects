@@ -1,0 +1,10 @@
+# Netlify redirects file
+# API and Socket.IO proxy rules
+# Update these URLs to your actual backend deployment
+
+/api/*  https://your-backend-url.com/api/:splat  200
+/socket.io/*  https://your-backend-url.com/socket.io/:splat  200
+
+# SPA fallback
+/*  /index.html  200
+
