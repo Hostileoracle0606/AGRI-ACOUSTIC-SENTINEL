@@ -13,17 +13,66 @@ require('dotenv').config();
 const app = express();
 const server = http.createServer(app);
 // CORS configuration - support both local development and Netlify deployment
+// Accept any Netlify subdomain (*.netlify.app) and custom domains
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
-  "https://aas.netlify.app",
   process.env.FRONTEND_URL,
   process.env.NETLIFY_URL
 ].filter(Boolean); // Remove undefined values
 
+// Add Netlify pattern matching for any *.netlify.app subdomain
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Allow any Netlify subdomain (*.netlify.app)
+    if (origin.match(/^https:\/\/[\w-]+\.netlify\.app$/)) {
+      return callback(null, true);
+    }
+    
+    // Allow localhost for development
+    if (origin.match(/^http:\/\/localhost(:\d+)?$/)) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+};
+
+// Socket.IO CORS - allow any Netlify subdomain
 const io = socketIo(server, {
   cors: {
-    origin: allowedOrigins.length > 0 ? allowedOrigins : "*",
+    origin: function (origin, callback) {
+      // Allow requests with no origin
+      if (!origin) return callback(null, true);
+      
+      // Allow if origin is in allowed list
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      
+      // Allow any Netlify subdomain (*.netlify.app)
+      if (origin.match(/^https:\/\/[\w-]+\.netlify\.app$/)) {
+        return callback(null, true);
+      }
+      
+      // Allow localhost for development
+      if (origin.match(/^http:\/\/localhost(:\d+)?$/)) {
+        return callback(null, true);
+      }
+      
+      callback(null, true); // Allow all for now (can be more restrictive)
+    },
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -48,20 +97,8 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Middleware
 // CORS configuration - support both local development and Netlify deployment
-const corsOrigins = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "https://aas.netlify.app",
-  process.env.FRONTEND_URL,
-  process.env.NETLIFY_URL
-].filter(Boolean); // Remove undefined values
-
-app.use(cors({
-  origin: corsOrigins.length > 0 ? corsOrigins : "*",
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+// Accepts any *.netlify.app subdomain automatically
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
