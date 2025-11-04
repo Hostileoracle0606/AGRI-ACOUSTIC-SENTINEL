@@ -10,8 +10,14 @@ import os
 import torch
 from pathlib import Path
 
-# Add ImageBind to path if it's in a subdirectory
-imagebind_path = Path(__file__).parent.parent / 'ImageBind'
+# Support cloud deployment - use environment variable for ImageBind path
+IMAGEBIND_PATH = os.environ.get('IMAGEBIND_PATH', None)
+if not IMAGEBIND_PATH:
+    # Default to parent directory for local development
+    IMAGEBIND_PATH = str(Path(__file__).parent.parent / 'ImageBind')
+
+# Add ImageBind to path (support both local and cloud deployment)
+imagebind_path = Path(IMAGEBIND_PATH)
 if imagebind_path.exists():
     sys.path.insert(0, str(imagebind_path.parent))
     sys.path.insert(0, str(imagebind_path))

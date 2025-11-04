@@ -136,27 +136,33 @@ async function analyzeWithAudioClassifier(audioFilePath) {
       throw new Error(`Audio file not found: ${audioFilePath}`);
     }
     
-    // Check if ImageBind is set up
-    const imagebindPath = path.join(__dirname, '..', 'ImageBind');
-    const pythonScript = path.join(__dirname, 'imagebind-local.py');
+            // Check if ImageBind is set up
+            // Support both local development and cloud deployment paths
+            const imagebindPath = process.env.IMAGEBIND_PATH || path.join(__dirname, '..', 'ImageBind');
+            const pythonScript = path.join(__dirname, 'imagebind-local.py');
     
     // Determine Python executable path
-    let pythonExecutable;
-    if (process.platform === 'win32') {
-      // Windows: try venv first, then system Python
-      const venvPython = path.join(imagebindPath, 'venv', 'Scripts', 'python.exe');
-      if (require('fs').existsSync(venvPython)) {
-        pythonExecutable = venvPython;
+    // Support cloud deployment with environment variable
+    let pythonExecutable = process.env.PYTHON_PATH;
+    
+    if (!pythonExecutable) {
+      // Auto-detect based on platform
+      if (process.platform === 'win32') {
+        // Windows: try venv first, then system Python
+        const venvPython = path.join(imagebindPath, 'venv', 'Scripts', 'python.exe');
+        if (require('fs').existsSync(venvPython)) {
+          pythonExecutable = venvPython;
+        } else {
+          pythonExecutable = 'python';
+        }
       } else {
-        pythonExecutable = 'python';
-      }
-    } else {
-      // Unix/Mac: try venv first, then system Python
-      const venvPython = path.join(imagebindPath, 'venv', 'bin', 'python');
-      if (require('fs').existsSync(venvPython)) {
-        pythonExecutable = venvPython;
-      } else {
-        pythonExecutable = 'python3';
+        // Unix/Mac/Cloud: try venv first, then system Python
+        const venvPython = path.join(imagebindPath, 'venv', 'bin', 'python');
+        if (require('fs').existsSync(venvPython)) {
+          pythonExecutable = venvPython;
+        } else {
+          pythonExecutable = 'python3';
+        }
       }
     }
     

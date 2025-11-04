@@ -805,6 +805,15 @@ async function initializeAudioDevices() {
 initializeAudioDevices();
 
 const PORT = process.env.PORT || 5000;
+
+// Health check endpoint for deployment
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'healthy', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
 server.listen(PORT, async () => {
   console.log(`Agri-Acoustic Sentinel server running on port ${PORT}`);
   console.log('🎤 Real microphone detection enabled');
