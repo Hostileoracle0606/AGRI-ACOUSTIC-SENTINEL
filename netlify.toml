@@ -5,12 +5,13 @@
   # Build the React frontend
   base = "client"
   publish = "client/build"
-  command = "npm install && npm run build"
+  command = "CI=false npm install && npm run build"
 
 [build.environment]
   # React build environment
   NODE_VERSION = "18"
   NPM_FLAGS = "--legacy-peer-deps"
+  CI = "false"
   # Set these in Netlify dashboard under Site settings > Environment variables
   # REACT_APP_API_URL = "https://your-backend-url.com"
   # REACT_APP_SOCKET_URL = "https://your-backend-url.com"
