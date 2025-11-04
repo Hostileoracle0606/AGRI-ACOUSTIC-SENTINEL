@@ -3,8 +3,9 @@
 
 [build]
   # Build the React frontend
+  # Base directory is "client", so publish path is relative to that
   base = "client"
-  publish = "client/build"
+  publish = "build"
   command = "CI=false npm install && npm run build"
 
 [build.environment]
