@@ -12,8 +12,17 @@ const path = require('path');
 
 // Initialize Replicate with your API token
 const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN,
+  auth: process.env.REPLICATE_API_TOKEN || process.env.REPLICATE_TOKEN,
 });
+
+// Verify API token is set
+if (!process.env.REPLICATE_API_TOKEN && !process.env.REPLICATE_TOKEN) {
+  console.warn('⚠️  WARNING: REPLICATE_API_TOKEN not found in environment variables!');
+  console.warn('   Please set REPLICATE_API_TOKEN in server/.env file');
+  console.warn('   Audio analysis will fail without a valid API token.');
+} else {
+  console.log('✅ Replicate API token found');
+}
 
 /**
  * Upload file to temporary hosting service to get HTTPS URL
@@ -110,53 +119,211 @@ async function uploadFileToTemporaryHost(audioBuffer, audioFilePath) {
 }
 
 /**
- * Audio classification using Replicate API with Buffer input
+ * Audio classification using local ImageBind model
+ * Uses ImageBind directly from GitHub: https://github.com/facebookresearch/ImageBind
  */
+const { spawn } = require('child_process');
+
 async function analyzeWithAudioClassifier(audioFilePath) {
   try {
-    console.log('Preparing file for Replicate API:', audioFilePath);
+    console.log('Analyzing audio with local ImageBind model:', audioFilePath);
     
-    // Option 1: Use Buffer (recommended for files up to 100MB)
-    const audioBuffer = await readFile(audioFilePath);
-    console.log('Audio file size:', audioBuffer.length, 'bytes');
-    
-    // Check file size limit
-    if (audioBuffer.length > 100 * 1024 * 1024) { // 100MB limit
-      throw new Error('Audio file too large (>100MB)');
+    // Check if audio file exists
+    const fs = require('fs').promises;
+    try {
+      await fs.access(audioFilePath);
+    } catch (error) {
+      throw new Error(`Audio file not found: ${audioFilePath}`);
     }
     
-    // Alternatively, you could use Option 3 (Data URI) for smaller files:
-    // const audioData = audioBuffer.toString('base64');
-    // const mimeType = getMimeType(audioFilePath);
-    // const fileInput = `data:${mimeType};base64,${audioData}`;
+    // Check if ImageBind is set up
+    const imagebindPath = path.join(__dirname, '..', 'ImageBind');
+    const pythonScript = path.join(__dirname, 'imagebind-local.py');
     
-    const input = {
-      file: audioBuffer // Use the buffer directly
+    // Determine Python executable path
+    let pythonExecutable;
+    if (process.platform === 'win32') {
+      // Windows: try venv first, then system Python
+      const venvPython = path.join(imagebindPath, 'venv', 'Scripts', 'python.exe');
+      if (require('fs').existsSync(venvPython)) {
+        pythonExecutable = venvPython;
+      } else {
+        pythonExecutable = 'python';
+      }
+    } else {
+      // Unix/Mac: try venv first, then system Python
+      const venvPython = path.join(imagebindPath, 'venv', 'bin', 'python');
+      if (require('fs').existsSync(venvPython)) {
+        pythonExecutable = venvPython;
+      } else {
+        pythonExecutable = 'python3';
+      }
+    }
+    
+    // Prepare input data
+    const inputData = {
+      audio_path: audioFilePath,
+      text_queries: [
+        "agricultural field bioacoustic pest detection",
+        "bark beetle sound",
+        "aphid wing beat",
+        "caterpillar chewing",
+        "grasshopper stridulation",
+        "healthy field environment",
+        "insect pest activity",
+        "crop damage sound"
+      ]
     };
     
-    // Replace with the actual Replicate model ID for audio classification
-    // For example: "facebook/musicgen-small" or another audio analysis model
-    const modelId = process.env.REPLICATE_MODEL_ID || "openai/whisper:latest";
+    console.log(`Running ImageBind analysis with Python: ${pythonExecutable}`);
+    console.log(`Script: ${pythonScript}`);
     
-    console.log('Calling Replicate API with model:', modelId);
-    const output = await replicate.run(modelId, { input });
-    
-    console.log('Replicate API output received:', typeof output, Object.keys(output || {}));
-    
-    // Process the output for bioacoustic analysis
-    const analysis = processReplicateOutput(output, audioFilePath);
-    
-    return {
-      ...analysis,
-      success: true,
-      source: 'replicate',
-      filePath: audioFilePath,
-      modelUsed: modelId
-    };
+    // Run Python script
+    return new Promise((resolve, reject) => {
+      const pythonProcess = spawn(pythonExecutable, [pythonScript], {
+        cwd: __dirname,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+      
+      let stdout = '';
+      let stderr = '';
+      
+      // Send input data
+      pythonProcess.stdin.write(JSON.stringify(inputData));
+      pythonProcess.stdin.end();
+      
+      // Collect output
+      pythonProcess.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+      
+      pythonProcess.stderr.on('data', (data) => {
+        stderr += data.toString();
+        // Log Python output to console
+        console.log(`[ImageBind] ${data.toString().trim()}`);
+      });
+      
+      pythonProcess.on('close', (code) => {
+        if (code !== 0) {
+          console.error('ImageBind Python script failed:', stderr);
+          reject(new Error(`ImageBind analysis failed: ${stderr || 'Unknown error'}`));
+          return;
+        }
+        
+        try {
+          // Extract JSON from stdout - filter out download progress and other messages
+          // Find the first complete JSON object and extract only that
+          let jsonOutput = stdout.trim();
+          
+          // Method 1: Find JSON object by counting braces (most reliable)
+          let braceCount = 0;
+          let jsonStart = -1;
+          let jsonEnd = -1;
+          
+          for (let i = 0; i < jsonOutput.length; i++) {
+            if (jsonOutput[i] === '{') {
+              if (braceCount === 0) {
+                jsonStart = i;
+              }
+              braceCount++;
+            } else if (jsonOutput[i] === '}') {
+              braceCount--;
+              if (braceCount === 0 && jsonStart !== -1) {
+                jsonEnd = i + 1;
+                break;
+              }
+            }
+          }
+          
+          if (jsonStart !== -1 && jsonEnd !== -1) {
+            jsonOutput = jsonOutput.substring(jsonStart, jsonEnd);
+          } else {
+            // Fallback: Try regex to find JSON object
+            const jsonMatch = jsonOutput.match(/\{[\s\S]*?\}/);
+            if (jsonMatch) {
+              jsonOutput = jsonMatch[0];
+            } else {
+              // Last resort: Find lines with JSON
+              const lines = stdout.split('\n');
+              let jsonLines = [];
+              let inJson = false;
+              let braceCount2 = 0;
+              
+              for (const line of lines) {
+                for (const char of line) {
+                  if (char === '{') {
+                    if (braceCount2 === 0) inJson = true;
+                    braceCount2++;
+                  } else if (char === '}') {
+                    braceCount2--;
+                    if (braceCount2 === 0 && inJson) {
+                      jsonLines.push(line);
+                      jsonOutput = jsonLines.join('\n').trim();
+                      break;
+                    }
+                  }
+                }
+                if (inJson) {
+                  jsonLines.push(line);
+                  if (braceCount2 === 0) break;
+                }
+              }
+            }
+          }
+          
+          // Clean up: remove any trailing content after the closing brace
+          const lastBraceIndex = jsonOutput.lastIndexOf('}');
+          if (lastBraceIndex !== -1) {
+            jsonOutput = jsonOutput.substring(0, lastBraceIndex + 1);
+          }
+          
+          const result = JSON.parse(jsonOutput);
+          
+          if (!result.success) {
+            reject(new Error(result.error || 'ImageBind analysis failed'));
+            return;
+          }
+          
+          // Convert to expected format
+          const analysis = {
+            timestamp: new Date().toISOString(),
+            confidence: result.confidence || 0.1,
+            pestTypes: result.pestTypes || [],
+            acousticFeatures: result.acousticFeatures || {},
+            baselineDeviation: 0.1, // Will be calculated by server
+            modelUsed: 'ImageBind (Local)',
+            similarityScores: result.similarities || {},
+            transcription: `Audio analyzed with ImageBind. Best match: ${result.bestMatch || 'unknown'}`,
+            embeddings: null,
+            source: 'local_imagebind',
+            filePath: audioFilePath
+          };
+          
+          console.log('✅ ImageBind analysis complete');
+          console.log(`   Confidence: ${analysis.confidence}`);
+          console.log(`   Detected pests: ${analysis.pestTypes.length}`);
+          console.log(`   Best match: ${result.bestMatch}`);
+          
+          resolve(analysis);
+          
+        } catch (parseError) {
+          console.error('Failed to parse ImageBind output:', parseError);
+          console.error('STDOUT (first 500 chars):', stdout.substring(0, 500));
+          console.error('STDOUT (last 500 chars):', stdout.substring(Math.max(0, stdout.length - 500)));
+          console.error('STDERR:', stderr);
+          reject(new Error(`Failed to parse ImageBind output: ${parseError.message}. Make sure the Python script outputs valid JSON.`));
+        }
+      });
+      
+      pythonProcess.on('error', (error) => {
+        console.error('Failed to start ImageBind Python process:', error);
+        reject(new Error(`ImageBind not available. Please run setup-imagebind.bat (Windows) or setup-imagebind.sh (Unix/Mac) to install ImageBind. Error: ${error.message}`));
+      });
+    });
     
   } catch (error) {
-    console.error('Replicate API error:', error);
-    throw new Error(`Replicate analysis failed: ${error.message}`);
+    console.error('ImageBind local analysis error:', error);
+    throw error;
   }
 }
 
@@ -392,6 +559,8 @@ function extractFrequencySpectrum(output) {
 function findDominantFrequencies(spectrum) {
   // Find frequencies with highest magnitude
   return spectrum
+
+  
     .sort((a, b) => b.magnitude - a.magnitude)
     .slice(0, 5)
     .map(s => s.frequency);
@@ -478,7 +647,7 @@ function processReplicateOutput(output, audioFilePath) {
   const confidence = calculateConfidenceFromImageBind(output, pestAnalysis);
   
   // Determine model name for display
-  let modelUsed = "Replicate Model";
+  let modelUsed = "ImageBind (Multimodal AI)";
   if (modelType === "whisper") {
     modelUsed = "Whisper (Audio Analysis)";
   } else if (output.model_type) {

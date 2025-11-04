@@ -1,15 +1,48 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { Upload, Mic, FileAudio, CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const AudioUpload = () => {
+const AudioUpload = ({ fieldData, onUploadComplete }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [analysisResult, setAnalysisResult] = useState(null);
-  const [microphoneId, setMicrophoneId] = useState('1');
+  const [microphoneId, setMicrophoneId] = useState('');
+  const [registeredMicrophones, setRegisteredMicrophones] = useState([]);
+  const [establishBaseline, setEstablishBaseline] = useState(false);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    loadMicrophones();
+  }, []);
+
+  const loadMicrophones = async () => {
+    try {
+      const response = await axios.get('/api/microphones');
+      setRegisteredMicrophones(response.data || []);
+      if (response.data && response.data.length > 0) {
+        setMicrophoneId(response.data[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading microphones:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (fieldData?.fieldLayout?.microphones) {
+      const mics = fieldData.fieldLayout.microphones.map(m => ({
+        id: m.id,
+        name: m.name || `Microphone ${m.id}`
+      }));
+      setRegisteredMicrophones(mics);
+      if (mics.length > 0 && !microphoneId) {
+        setMicrophoneId(mics[0].id);
+      }
+    } else {
+      loadMicrophones();
+    }
+  }, [fieldData]);
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
@@ -50,7 +83,12 @@ const AudioUpload = () => {
 
   const uploadAudio = async () => {
     if (!selectedFile) {
-      toast.error('Please select an audio file first');
+      toast.error('Please select an audio file');
+      return;
+    }
+    
+    if (!microphoneId || registeredMicrophones.length === 0) {
+      toast.error('Please register a microphone first');
       return;
     }
 
@@ -61,6 +99,9 @@ const AudioUpload = () => {
     const formData = new FormData();
     formData.append('audio', selectedFile);
     formData.append('microphoneId', microphoneId);
+    if (establishBaseline) {
+      formData.append('establishBaseline', 'true');
+    }
 
     try {
       // Simulate progress
@@ -88,7 +129,16 @@ const AudioUpload = () => {
       setUploadProgress(100);
       
       setAnalysisResult(response.data.analysis);
-      toast.success('Audio analysis completed successfully!');
+      
+      if (establishBaseline && response.data.baselineUpdated) {
+        toast.success('Audio analyzed and baseline updated successfully!');
+      } else {
+        toast.success('Audio analysis completed successfully!');
+      }
+      
+      if (onUploadComplete) {
+        onUploadComplete();
+      }
       
       // Keep results visible - only reset when new file is selected
       // Clear the selected file to allow new uploads but keep results
@@ -99,8 +149,24 @@ const AudioUpload = () => {
 
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Failed to analyze audio file');
+      const errorMessage = error.response?.data?.error || error.message || 'Unknown error';
+      toast.error(`Failed to analyze audio file: ${errorMessage}`);
       setUploadProgress(0);
+      
+      // Still show some result even if analysis fails
+      setAnalysisResult({
+        timestamp: new Date().toISOString(),
+        confidence: 0.1,
+        pestTypes: [],
+        acousticFeatures: {
+          frequency: 0,
+          amplitude: 0,
+          spectralCentroid: 0,
+          zeroCrossingRate: 0
+        },
+        error: errorMessage,
+        success: false
+      });
     } finally {
       setIsUploading(false);
     }
@@ -202,16 +268,45 @@ const AudioUpload = () => {
                 <Mic className="w-4 h-4 text-gray-500" />
                 <span className="text-sm font-medium">Select microphone:</span>
               </div>
-              <select
-                value={microphoneId}
-                onChange={(e) => setMicrophoneId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="1">Microphone #1 (North-West)</option>
-                <option value="2">Microphone #2 (North-East)</option>
-                <option value="3">Microphone #3 (South-West)</option>
-                <option value="4">Microphone #4 (South-East)</option>
-              </select>
+              {registeredMicrophones.length === 0 ? (
+                <div className="p-4 border border-yellow-300 bg-yellow-50 rounded-md">
+                  <p className="text-sm text-yellow-800">
+                    No microphones registered. Please register an audio device first.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <select
+                    value={microphoneId}
+                    onChange={(e) => setMicrophoneId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {registeredMicrophones.map(mic => (
+                      <option key={mic.id} value={mic.id}>
+                        {mic.name || `Microphone ${mic.id}`}
+                      </option>
+                    ))}
+                  </select>
+                  
+                  {/* Baseline Establishment Option */}
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={establishBaseline}
+                        onChange={(e) => setEstablishBaseline(e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        Use this audio to establish/update baseline
+                      </span>
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1 ml-6">
+                      Checking this will update the baseline profile for the selected microphone using this audio clip
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 

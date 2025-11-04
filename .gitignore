@@ -35,3 +35,16 @@ Thumbs.db
 coverage/
 .nyc_output/
 
+# ImageBind model and checkpoints (large files)
+ImageBind/
+.checkpoints/
+server/.checkpoints/
+*.pth
+*.pt
+*.ckpt
+
+# Python virtual environments
+venv/
+env/
+ENV/
+

@@ -76,10 +76,9 @@ const FieldMap = ({ fieldData, currentReadings }) => {
         <p className="card-subtitle">Real-time monitoring of microphone sensors and pest activity</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Map */}
-        <div className="lg:col-span-3">
-          <div className="card h-96">
+      <div className="w-full">
+        {/* Map - Full Width */}
+        <div className="card" style={{ height: '500px' }}>
             <MapContainer
               center={center}
               zoom={16}
@@ -116,13 +115,13 @@ const FieldMap = ({ fieldData, currentReadings }) => {
                     icon={status === 'alert' ? alertIcon : micIcon}
                   >
                     <Popup>
-                      <div className="p-2">
-                        <h4 className="font-semibold text-lg mb-2">
+                      <div className="p-2" style={{ color: 'var(--text-primary)', minWidth: '200px' }}>
+                        <h4 className="font-semibold text-lg mb-2" style={{ color: 'var(--text-primary)' }}>
                           Microphone #{mic.id}
                         </h4>
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">Status:</span>
+                            <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Status:</span>
                             <span className={`status-badge ${
                               status === 'alert' ? 'critical' :
                               status === 'warning' ? 'warning' : 'healthy'
@@ -134,22 +133,22 @@ const FieldMap = ({ fieldData, currentReadings }) => {
                           
                           {reading && (
                             <>
-                              <div className="text-sm">
+                              <div className="text-sm" style={{ color: 'var(--text-primary)' }}>
                                 <span className="font-medium">Confidence:</span> {(reading.confidence * 100).toFixed(1)}%
                               </div>
-                              <div className="text-sm">
+                              <div className="text-sm" style={{ color: 'var(--text-primary)' }}>
                                 <span className="font-medium">Baseline Dev:</span> {(reading.baselineDeviation * 100).toFixed(1)}%
                               </div>
-                              <div className="text-sm">
+                              <div className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                                 <span className="font-medium">Last Update:</span> {new Date(reading.timestamp).toLocaleTimeString()}
                               </div>
                               
                               {reading.pestTypes?.length > 0 && (
                                 <div className="mt-2">
-                                  <span className="font-medium text-sm">Detected Pests:</span>
+                                  <span className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>Detected Pests:</span>
                                   <ul className="list-disc list-inside text-sm mt-1">
                                     {reading.pestTypes.map((pest, idx) => (
-                                      <li key={idx} className="text-red-600">
+                                      <li key={idx} style={{ color: 'var(--accent-red)' }}>
                                         {pest.type.replace('_', ' ')} ({(pest.confidence * 100).toFixed(1)}%)
                                       </li>
                                     ))}
@@ -186,74 +185,110 @@ const FieldMap = ({ fieldData, currentReadings }) => {
               })}
             </MapContainer>
           </div>
-        </div>
-
-        {/* Legend and Info */}
-        <div className="space-y-4">
+          
+          {/* Legend and Info - Below Map */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4" style={{ alignItems: 'stretch' }}>
           {/* Legend */}
-          <div className="card">
-            <div className="card-header">
-              <h4 className="card-title text-lg">Map Legend & Examples</h4>
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', minHeight: '300px' }}>
+            <div className="card-header" style={{ flexShrink: 0 }}>
+              <h4 className="card-title" style={{ fontSize: '16px' }}>Map Legend & Examples</h4>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-3" style={{ flex: '1 1 auto' }}>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: 'var(--accent-green)' }}></div>
                 <div className="flex-1">
-                  <span className="text-sm font-medium">Healthy Microphone</span>
-                  <div className="text-xs text-gray-600">Mic #4: 15% confidence, Normal baseline</div>
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Healthy Microphone</span>
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Mic #4: 15% confidence, Normal baseline</div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
+                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: 'var(--accent-yellow)' }}></div>
                 <div className="flex-1">
-                  <span className="text-sm font-medium">Warning</span>
-                  <div className="text-xs text-gray-600">Mic #2: 55% confidence, Elevated activity</div>
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Warning</span>
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Mic #2: 55% confidence, Elevated activity</div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: 'var(--accent-red)' }}></div>
                 <div className="flex-1">
-                  <span className="text-sm font-medium">Alert</span>
-                  <div className="text-xs text-gray-600">Mic #1 & #3: Pest detected, Action needed</div>
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Alert</span>
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Mic #1 & #3: Pest detected, Action needed</div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-gray-500 rounded-full border-2 border-dashed"></div>
+                <div className="w-4 h-4 rounded-full border-2 border-dashed" style={{ 
+                  backgroundColor: 'transparent',
+                  borderColor: 'var(--accent-blue)'
+                }}></div>
                 <div className="flex-1">
-                  <span className="text-sm font-medium">Field Boundary</span>
-                  <div className="text-xs text-gray-600">Monitoring area perimeter</div>
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Field Boundary</span>
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Monitoring area perimeter</div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-red-500 rounded-full opacity-30"></div>
+                <div className="w-4 h-4 rounded-full" style={{ 
+                  backgroundColor: 'var(--accent-red)',
+                  opacity: 0.3
+                }}></div>
                 <div className="flex-1">
-                  <span className="text-sm font-medium">Alert Zone</span>
-                  <div className="text-xs text-gray-600">Recent pest activity areas</div>
+                  <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Alert Zone</span>
+                  <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>Recent pest activity areas</div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Sensor Status */}
-          <div className="card">
-            <div className="card-header">
-              <h4 className="card-title text-lg">Sensor Status Examples</h4>
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', minHeight: '300px' }}>
+            <div className="card-header" style={{ flexShrink: 0 }}>
+              <h4 className="card-title" style={{ fontSize: '16px' }}>Sensor Status Examples</h4>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2" style={{ flex: '1 1 auto', overflowY: 'auto' }}>
               {microphones.map((mic) => {
                 const status = getMicrophoneStatus(mic.id);
                 const reading = currentReadings[mic.id];
+                const statusColor = getStatusColor(status);
+                
+                // Get status badge style
+                const getBadgeStyle = () => {
+                  if (status === 'alert') {
+                    return {
+                      background: 'rgba(255, 59, 48, 0.15)',
+                      color: 'var(--accent-red)',
+                      border: '1px solid rgba(255, 59, 48, 0.3)'
+                    };
+                  } else if (status === 'warning') {
+                    return {
+                      background: 'rgba(255, 204, 0, 0.15)',
+                      color: 'var(--accent-yellow)',
+                      border: '1px solid rgba(255, 204, 0, 0.3)'
+                    };
+                  } else {
+                    return {
+                      background: 'rgba(48, 209, 88, 0.15)',
+                      color: 'var(--accent-green)',
+                      border: '1px solid rgba(48, 209, 88, 0.3)'
+                    };
+                  }
+                };
                 
                 return (
-                  <div key={mic.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <div 
+                    key={mic.id} 
+                    className="flex items-center justify-between p-2 rounded"
+                    style={{
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border-color)'
+                    }}
+                  >
                     <div className="flex items-center gap-2">
                       <div 
                         className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: getStatusColor(status) }}
+                        style={{ backgroundColor: statusColor }}
                       ></div>
                       <div className="flex-1">
-                        <span className="text-sm font-medium">Mic #{mic.id}</span>
-                        <div className="text-xs text-gray-600">
+                        <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Mic #{mic.id}</span>
+                        <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                           {status === 'alert' && '🔴 Pest Alert'}
                           {status === 'warning' && '🟡 Elevated Activity'}
                           {status === 'healthy' && '🟢 Healthy'}
@@ -261,24 +296,23 @@ const FieldMap = ({ fieldData, currentReadings }) => {
                         </div>
                       </div>
                     </div>
-                    <div className="text-xs text-gray-600">
+                    <div className="text-xs">
                       {reading ? (
                         <div className="text-right">
-                          <div className={`px-2 py-1 rounded-full ${
-                            status === 'alert' ? 'bg-red-100 text-red-800' :
-                            status === 'warning' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-green-100 text-green-800'
-                          }`}>
+                          <div 
+                            className="px-2 py-1 rounded-full text-xs font-medium"
+                            style={getBadgeStyle()}
+                          >
                             {(reading.confidence * 100).toFixed(0)}%
                           </div>
                           {reading.pestTypes?.length > 0 && (
-                            <div className="text-xs text-red-600 mt-1">
+                            <div className="text-xs mt-1" style={{ color: 'var(--accent-red)' }}>
                               {reading.pestTypes.length} pest(s)
                             </div>
                           )}
                         </div>
                       ) : (
-                        <span className="text-gray-400">No data</span>
+                        <span style={{ color: 'var(--text-tertiary)' }}>No data</span>
                       )}
                     </div>
                   </div>
@@ -288,26 +322,26 @@ const FieldMap = ({ fieldData, currentReadings }) => {
           </div>
 
           {/* Field Info */}
-          <div className="card">
-            <div className="card-header">
-              <h4 className="card-title text-lg">Field Information</h4>
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', minHeight: '300px' }}>
+            <div className="card-header" style={{ flexShrink: 0 }}>
+              <h4 className="card-title" style={{ fontSize: '16px' }}>Field Information</h4>
             </div>
-            <div className="space-y-2 text-sm">
+            <div className="space-y-2 text-sm" style={{ flex: '1 1 auto' }}>
               <div className="flex justify-between">
-                <span className="text-gray-600">Total Sensors:</span>
-                <span className="font-medium">{microphones.length}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Total Sensors:</span>
+                <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{microphones.length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Active Alerts:</span>
-                <span className="font-medium text-red-600">{recentAlerts.length}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Active Alerts:</span>
+                <span className="font-medium" style={{ color: 'var(--accent-red)' }}>{recentAlerts.length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Field Size:</span>
-                <span className="font-medium">~2 acres</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Field Size:</span>
+                <span className="font-medium" style={{ color: 'var(--text-primary)' }}>~2 acres</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Coverage:</span>
-                <span className="font-medium">100%</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Coverage:</span>
+                <span className="font-medium" style={{ color: 'var(--text-primary)' }}>100%</span>
               </div>
             </div>
           </div>

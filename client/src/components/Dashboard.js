@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { Activity, AlertTriangle, Mic, TrendingUp } from 'lucide-react';
 
@@ -14,18 +14,43 @@ const Dashboard = ({ fieldData, currentReadings }) => {
     ? Object.values(currentReadings).reduce((sum, reading) => sum + reading.confidence, 0) / Object.values(currentReadings).length
     : 0;
 
-  // Generate mock time series data for the last 24 hours
+  // Generate demo time series data for acoustic analysis over time
   const generateTimeSeriesData = () => {
+    // Always generate demo data for the graph
     const data = [];
     const now = new Date();
     
+    // Generate 24 data points (one per hour for last 24 hours)
     for (let i = 23; i >= 0; i--) {
-      const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+      const hourStart = new Date(now.getTime() - i * 60 * 60 * 1000);
+      
+      // Create realistic demo data with some variation
+      const baseHour = (23 - i) % 24;
+      const timeOfDayFactor = baseHour < 6 ? 0.3 : baseHour < 12 ? 0.5 : baseHour < 18 ? 0.7 : 0.4; // Lower activity at night
+      
+      // Confidence: varies between 0.1 and 0.8 with some peaks
+      const confidence = Math.max(0.1, Math.min(0.8, 
+        timeOfDayFactor * 0.6 + 
+        Math.sin((baseHour / 24) * Math.PI * 2) * 0.2 + 
+        Math.random() * 0.2
+      ));
+      
+      // Baseline deviation: related to confidence but with some lag
+      const baselineDeviation = Math.max(0.05, Math.min(0.4, 
+        confidence * 0.5 + 
+        Math.random() * 0.15
+      ));
+      
+      // Pest activity: spikes when confidence is high and baseline deviation is high
+      const pestActivity = confidence > 0.5 && baselineDeviation > 0.2
+        ? confidence * 0.8 + Math.random() * 0.2
+        : Math.max(0, confidence * 0.3 + Math.random() * 0.1);
+      
       data.push({
-        time: time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-        confidence: Math.random() * 0.3 + 0.1,
-        baselineDeviation: Math.random() * 0.2 + 0.05,
-        pestActivity: Math.random() < 0.1 ? Math.random() * 0.8 + 0.2 : 0
+        time: hourStart.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        confidence: confidence,
+        baselineDeviation: baselineDeviation,
+        pestActivity: pestActivity
       });
     }
     
@@ -34,13 +59,31 @@ const Dashboard = ({ fieldData, currentReadings }) => {
 
   const timeSeriesData = generateTimeSeriesData();
 
-  // Generate pest type distribution data
-  const pestDistribution = [
-    { name: 'Bark Beetle', count: 3, color: '#ef4444' },
-    { name: 'Aphid', count: 7, color: '#f59e0b' },
-    { name: 'Caterpillar', count: 2, color: '#10b981' },
-    { name: 'Grasshopper', count: 1, color: '#8b5cf6' }
-  ];
+  // Generate pest type distribution from real alerts
+  const pestDistribution = React.useMemo(() => {
+    const pestCounts = {};
+    const recentAlerts = fieldData?.alerts?.filter(alert => 
+      new Date(alert.timestamp) > new Date(Date.now() - 24 * 60 * 60 * 1000)
+    ) || [];
+    
+    recentAlerts.forEach(alert => {
+      if (alert.pestTypes) {
+        alert.pestTypes.forEach(pest => {
+          const pestName = pest.type?.replace('_', ' ') || 'Unknown';
+          pestCounts[pestName] = (pestCounts[pestName] || 0) + 1;
+        });
+      }
+    });
+    
+    const colors = ['#ef4444', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#6366f1'];
+    let colorIndex = 0;
+    
+    return Object.entries(pestCounts).map(([name, count]) => ({
+      name,
+      count,
+      color: colors[colorIndex++ % colors.length]
+    }));
+  }, [fieldData?.alerts]);
 
   const metrics = [
     {
@@ -75,10 +118,10 @@ const Dashboard = ({ fieldData, currentReadings }) => {
   ];
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-header">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Field Monitoring Dashboard</h2>
-        <p className="text-gray-600">Real-time bioacoustic analysis and pest detection</p>
+    <div className="dashboard" style={{ width: '100%', overflow: 'hidden' }}>
+      <div className="dashboard-header" style={{ marginBottom: 'var(--spacing-sm)' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', margin: 0, marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Field Monitoring Dashboard</h2>
+        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Real-time bioacoustic analysis and pest detection</p>
       </div>
 
       {/* Metrics Grid */}
@@ -105,38 +148,64 @@ const Dashboard = ({ fieldData, currentReadings }) => {
         <div className="card">
           <div className="card-header">
             <h3 className="card-title">Acoustic Analysis Over Time</h3>
-            <p className="card-subtitle">Last 24 hours</p>
+            <p className="card-subtitle">Last 24 hours - Demo data</p>
           </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={timeSeriesData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="time" />
-                <YAxis />
-                <Tooltip />
-                <Line 
-                  type="monotone" 
-                  dataKey="confidence" 
-                  stroke="#667eea" 
-                  strokeWidth={2}
-                  name="Detection Confidence"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="baselineDeviation" 
-                  stroke="#f59e0b" 
-                  strokeWidth={2}
-                  name="Baseline Deviation"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="pestActivity" 
-                  stroke="#ef4444" 
-                  strokeWidth={2}
-                  name="Pest Activity"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="h-80">
+            {timeSeriesData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={timeSeriesData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                  <XAxis 
+                    dataKey="time" 
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+                    stroke="var(--border-color)"
+                  />
+                  <YAxis 
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+                    stroke="var(--border-color)"
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'var(--bg-card)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      color: 'var(--text-primary)'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="confidence" 
+                    stroke="#667eea" 
+                    strokeWidth={2}
+                    name="Detection Confidence"
+                    dot={{ r: 3 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="baselineDeviation" 
+                    stroke="#f59e0b" 
+                    strokeWidth={2}
+                    name="Baseline Deviation"
+                    dot={{ r: 3 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="pestActivity" 
+                    stroke="#ef4444" 
+                    strokeWidth={2}
+                    name="Pest Activity"
+                    dot={{ r: 3 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full" style={{ color: 'var(--text-secondary)' }}>
+                <div className="text-center">
+                  <p className="text-sm">No data available</p>
+                  <p className="text-xs mt-1">Register microphones to start monitoring</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -146,16 +215,39 @@ const Dashboard = ({ fieldData, currentReadings }) => {
             <h3 className="card-title">Pest Type Distribution</h3>
             <p className="card-subtitle">Detected species</p>
           </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={pestDistribution}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#667eea" />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="h-80">
+            {pestDistribution.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={pestDistribution}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+                    stroke="var(--border-color)"
+                  />
+                  <YAxis 
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+                    stroke="var(--border-color)"
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'var(--bg-card)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      color: 'var(--text-primary)'
+                    }}
+                  />
+                  <Bar dataKey="count" fill="#667eea" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full" style={{ color: 'var(--text-secondary)' }}>
+                <div className="text-center">
+                  <p className="text-sm">No pest detections</p>
+                  <p className="text-xs mt-1">Field appears healthy</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -169,31 +261,37 @@ const Dashboard = ({ fieldData, currentReadings }) => {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Microphone</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Timestamp</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Confidence</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Baseline Dev.</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
+              <tr className="border-b" style={{ borderColor: 'var(--border-color)' }}>
+                <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-primary)' }}>Microphone</th>
+                <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-primary)' }}>Timestamp</th>
+                <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-primary)' }}>Confidence</th>
+                <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-primary)' }}>Baseline Dev.</th>
+                <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-primary)' }}>Status</th>
               </tr>
             </thead>
             <tbody>
               {Object.entries(currentReadings).map(([micId, reading]) => (
-                <tr key={micId} className="border-b border-gray-100">
-                  <td className="py-3 px-4">Mic #{micId}</td>
-                  <td className="py-3 px-4 text-sm text-gray-600">
+                <tr key={micId} className="border-b" style={{ borderColor: 'var(--border-color)' }}>
+                  <td className="py-3 px-4" style={{ color: 'var(--text-primary)' }}>Mic #{micId}</td>
+                  <td className="py-3 px-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
                     {new Date(reading.timestamp).toLocaleTimeString()}
                   </td>
                   <td className="py-3 px-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      reading.confidence > 0.7 ? 'bg-red-100 text-red-800' :
-                      reading.confidence > 0.4 ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
+                    <span className="px-2 py-1 rounded-full text-xs font-medium" style={{
+                      background: reading.confidence > 0.7 ? 'rgba(255, 59, 48, 0.15)' :
+                                  reading.confidence > 0.4 ? 'rgba(255, 204, 0, 0.15)' :
+                                  'rgba(48, 209, 88, 0.15)',
+                      color: reading.confidence > 0.7 ? 'var(--accent-red)' :
+                             reading.confidence > 0.4 ? 'var(--accent-yellow)' :
+                             'var(--accent-green)',
+                      border: `1px solid ${reading.confidence > 0.7 ? 'rgba(255, 59, 48, 0.3)' :
+                                              reading.confidence > 0.4 ? 'rgba(255, 204, 0, 0.3)' :
+                                              'rgba(48, 209, 88, 0.3)'}`
+                    }}>
                       {(reading.confidence * 100).toFixed(1)}%
                     </span>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4" style={{ color: 'var(--text-secondary)' }}>
                     {(reading.baselineDeviation * 100).toFixed(1)}%
                   </td>
                   <td className="py-3 px-4">
@@ -212,7 +310,7 @@ const Dashboard = ({ fieldData, currentReadings }) => {
             </tbody>
           </table>
           {Object.keys(currentReadings).length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8" style={{ color: 'var(--text-secondary)' }}>
               No recent readings available
             </div>
           )}
