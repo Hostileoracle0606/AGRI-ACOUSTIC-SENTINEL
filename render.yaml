@@ -1,0 +1,25 @@
+# Render Blueprint for Agri-Acoustic Sentinel Backend
+services:
+  - type: web
+    name: agri-acoustic-sentinel-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter # Change to standard/pro for better performance
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: PYTHONUNBUFFERED
+        value: 1
+      - key: IMAGEBIND_PATH
+        value: /app/ImageBind
+      - key: PYTHON_PATH
+        value: /usr/bin/python3
+      # Add these after frontend is deployed:
+      # - key: FRONTEND_URL
+      #   value: https://aas.netlify.app
+      # - key: NETLIFY_URL
+      #   value: https://aas.netlify.app
+
