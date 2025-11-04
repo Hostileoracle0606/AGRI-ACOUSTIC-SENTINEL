@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
+import axios from '../config/axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { Play, Pause, Square, Settings, TrendingUp, Clock, Target, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';

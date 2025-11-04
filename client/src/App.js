@@ -6,9 +6,13 @@ import FieldMap from './components/FieldMap';
 import AudioUpload from './components/AudioUpload';
 import BaselineManager from './components/BaselineManager';
 import MicrophoneManager from './components/MicrophoneManager';
+import { SOCKET_URL, API_BASE_URL } from './config/api';
 import './App.css';
 
-const socket = io('http://localhost:5000');
+const socket = io(SOCKET_URL, {
+  transports: ['websocket', 'polling'],
+  autoConnect: true
+});
 
 function App() {
   const [fieldData, setFieldData] = useState(null);
@@ -60,7 +64,7 @@ function App() {
     // Fallback: Load data manually if socket doesn't connect
     const loadDataManually = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/field-data');
+        const response = await fetch(`${API_BASE_URL}/api/field-data`);
         if (response.ok) {
           const data = await response.json();
           setFieldData(data);
@@ -91,7 +95,7 @@ function App() {
 
   const handleMicrophoneRegistered = () => {
     // Reload field data when microphone is registered
-    fetch('http://localhost:5000/api/field-data')
+    fetch(`${API_BASE_URL}/api/field-data`)
       .then(res => res.json())
       .then(data => {
         setFieldData(data);

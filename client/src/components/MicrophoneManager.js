@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../config/axios';
 import { Mic, Plus, Trash2, MapPin, Radio, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { requestMicrophoneAccess, checkMicrophonePermission } from '../utils/microphone-access';

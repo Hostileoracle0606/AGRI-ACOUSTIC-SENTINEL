@@ -12,10 +12,20 @@ require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
+// CORS configuration - support both local development and Netlify deployment
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://aas.netlify.app",
+  process.env.FRONTEND_URL,
+  process.env.NETLIFY_URL
+].filter(Boolean); // Remove undefined values
+
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"]
+    origin: allowedOrigins.length > 0 ? allowedOrigins : "*",
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
@@ -37,7 +47,21 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // Middleware
-app.use(cors());
+// CORS configuration - support both local development and Netlify deployment
+const corsOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://aas.netlify.app",
+  process.env.FRONTEND_URL,
+  process.env.NETLIFY_URL
+].filter(Boolean); // Remove undefined values
+
+app.use(cors({
+  origin: corsOrigins.length > 0 ? corsOrigins : "*",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
