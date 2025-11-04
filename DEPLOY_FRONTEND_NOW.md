@@ -2,14 +2,11 @@
 
 Your backend is deployed! Now let's deploy the frontend.
 
-## Step 1: Get Your Backend URL
+## Step 1: Your Backend URL
 
-From Railway dashboard:
-1. Click on your deployed service
-2. Go to "Settings" → "Networking" 
-3. Copy your **Public Domain** URL
-   - Example: `https://your-app.up.railway.app`
-   - This is your backend URL!
+✅ **Your Railway Backend URL:** `https://web-production-653fa.up.railway.app`
+
+**Test it:** Visit `https://web-production-653fa.up.railway.app/api/health` - should return `{"status":"healthy",...}`
 
 ## Step 2: Deploy Frontend to Netlify
 
@@ -35,9 +32,9 @@ From Railway dashboard:
    - Go to "Environment variables"
    - Click "Add variable" for each:
      - **Key:** `REACT_APP_API_URL`
-       **Value:** `[Your Railway backend URL]` (from Step 1)
+       **Value:** `https://web-production-653fa.up.railway.app`
      - **Key:** `REACT_APP_SOCKET_URL`  
-       **Value:** `[Same Railway backend URL]`
+       **Value:** `https://web-production-653fa.up.railway.app`
 
 5. **Change Site Name:**
    - Go to "Site settings" → "General"
@@ -68,9 +65,9 @@ netlify init
 # - Build command: npm run build
 # - Directory to deploy: build
 
-# Set environment variables (replace with your Railway URL)
-netlify env:set REACT_APP_API_URL https://your-app.up.railway.app
-netlify env:set REACT_APP_SOCKET_URL https://your-app.up.railway.app
+# Set environment variables (using your Railway URL)
+netlify env:set REACT_APP_API_URL https://web-production-653fa.up.railway.app
+netlify env:set REACT_APP_SOCKET_URL https://web-production-653fa.up.railway.app
 
 # Deploy
 netlify deploy --prod
@@ -98,7 +95,7 @@ After frontend is deployed, update backend to allow Netlify:
 ## Step 4: Test Everything
 
 1. **Frontend:** Visit `https://aas.netlify.app`
-2. **Backend Health:** Visit `https://your-backend-url.com/api/health`
+2. **Backend Health:** Visit `https://web-production-653fa.up.railway.app/api/health`
 3. **Check Browser Console:** Should see "Connected to server"
 4. **Test Features:** Try uploading an audio file
 

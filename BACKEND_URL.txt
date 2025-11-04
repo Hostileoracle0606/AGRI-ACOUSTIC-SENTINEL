@@ -1,0 +1,7 @@
+Backend URL: https://web-production-653fa.up.railway.app
+
+Use this URL for:
+- REACT_APP_API_URL in Netlify
+- REACT_APP_SOCKET_URL in Netlify
+- Testing backend health: https://web-production-653fa.up.railway.app/api/health
+
