@@ -875,8 +875,11 @@ app.get('/api/health', (req, res) => {
     uptime: process.uptime()
   });
 });
-server.listen(PORT, async () => {
+// Listen on all interfaces (0.0.0.0) for Railway/cloud deployment
+server.listen(PORT, '0.0.0.0', async () => {
   console.log(`Agri-Acoustic Sentinel server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Health check: http://0.0.0.0:${PORT}/api/health`);
   console.log('🎤 Real microphone detection enabled');
   console.log('📊 Demo data disabled - using real audio analysis only');
   console.log('🔍 Waiting for microphones to be registered...');
