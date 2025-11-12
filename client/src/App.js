@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Toaster } from 'react-hot-toast';
 import io from 'socket.io-client';
 import Dashboard from './components/Dashboard';
@@ -8,11 +8,6 @@ import BaselineManager from './components/BaselineManager';
 import MicrophoneManager from './components/MicrophoneManager';
 import { SOCKET_URL, API_BASE_URL } from './config/api';
 import './App.css';
-
-const socket = io(SOCKET_URL, {
-  transports: ['websocket', 'polling'],
-  autoConnect: true,
-});
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -27,16 +22,27 @@ function App() {
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showMicrophoneModal, setShowMicrophoneModal] = useState(false);
+  const socketRef = useRef(null);
 
   useEffect(() => {
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      autoConnect: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1500,
+      withCredentials: true,
+    });
+
+    socketRef.current = socket;
+
     const handleConnect = () => {
       setConnectionStatus('connected');
       console.log('Connected to server');
     };
 
-    const handleDisconnect = () => {
+    const handleDisconnect = (reason) => {
       setConnectionStatus('disconnected');
-      console.log('Disconnected from server');
+      console.log('Disconnected from server', reason);
     };
 
     const handleFieldData = (data) => {
@@ -88,21 +94,22 @@ function App() {
       }
     };
 
-    const timeoutId = setTimeout(() => {
+    const fallbackTimeout = setTimeout(() => {
       if (!socket.connected) {
         loadDataManually();
       }
     }, 3000);
 
     return () => {
-      clearTimeout(timeoutId);
+      clearTimeout(fallbackTimeout);
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
       socket.off('fieldData', handleFieldData);
       socket.off('fieldUpdate', handleFieldUpdate);
       socket.off('newAlert', handleNewAlert);
       socket.off('baselineUpdate', handleBaselineUpdate);
-      socket.close();
+      socket.disconnect();
+      socketRef.current = null;
     };
   }, []);
 
