@@ -169,6 +169,13 @@ This version is actively being developed and tested. Key areas of focus:
    
    This will start both the backend server (port 5000) and frontend development server (port 3000).
 
+### Production Deployment Notes
+
+- **Frontend → Backend URL**: Set `REACT_APP_API_BASE_URL` (and optional `REACT_APP_SOCKET_BASE_URL`) in your hosting provider to the publicly reachable backend root, e.g. `https://api.example.com`. The React build no longer defaults to `window.location.origin`, preventing the Netlify → Railway mismatch that caused buffering in production.
+- **Runtime overrides**: Alternatively, inject `window.__APP_CONFIG__ = { apiBaseUrl: 'https://api.example.com' }` via an HTML snippet before loading the bundle if you need to configure the API endpoint without rebuilding.
+- **CORS**: Ensure `FRONTEND_URL` (and/or `NETLIFY_URL`) is set on the backend so the Express CORS middleware will allow the deployed frontend domain.
+- **Leaflet assets**: CDN styles are no longer required—the app imports `leaflet/dist/leaflet.css` from npm so browsers with tracking prevention (Edge/Safari) cannot block the map styles.
+
 ## 🎮 Usage
 
 ### Getting Started

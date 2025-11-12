@@ -1,239 +1,258 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { AlertTriangle, Clock, MapPin, Bug, Filter } from 'lucide-react';
 
-const AlertCenter = ({ alerts }) => {
+const severityTone = (severity) => {
+  if (severity > 0.7) {
+    return {
+      badge: 'border-danger-500/40 bg-danger-500/10 text-danger-400',
+      rail: 'border-l-danger-500/70',
+      label: 'Critical',
+    };
+  }
+
+  if (severity > 0.4) {
+    return {
+      badge: 'border-warning-500/40 bg-warning-500/10 text-warning-400',
+      rail: 'border-l-warning-500/70',
+      label: 'Warning',
+    };
+  }
+
+  return {
+    badge: 'border-brand-500/40 bg-brand-500/10 text-brand-300',
+    rail: 'border-l-brand-500/60',
+    label: 'Info',
+  };
+};
+
+const formatTimeAgo = (timestamp) => {
+  const now = new Date();
+  const alertTime = new Date(timestamp);
+  const diffMs = now - alertTime;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffDays > 0) return `${diffDays}d ago`;
+  if (diffHours > 0) return `${diffHours}h ago`;
+  if (diffMins > 0) return `${diffMins}m ago`;
+  return 'Just now';
+};
+
+const getPestName = (pestType) => pestType.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+
+const pestIcon = (type) => {
+  switch (type) {
+    case 'bark_beetle':
+      return '🪲';
+    case 'aphid':
+      return '🪰';
+    case 'caterpillar':
+      return '🐛';
+    case 'grasshopper':
+      return '🦗';
+    default:
+      return '🐞';
+  }
+};
+
+const AlertCenter = ({ alerts = [] }) => {
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('timestamp');
 
-  const filteredAlerts = alerts.filter(alert => {
-    if (filter === 'all') return true;
-    if (filter === 'critical') return alert.severity > 0.7;
-    if (filter === 'warning') return alert.severity <= 0.7 && alert.severity > 0.4;
-    return true;
-  });
+  const filteredAlerts = useMemo(() => {
+    if (filter === 'critical') {
+      return alerts.filter((alert) => alert.severity > 0.7);
+    }
+    if (filter === 'warning') {
+      return alerts.filter((alert) => alert.severity <= 0.7 && alert.severity > 0.4);
+    }
+    return alerts;
+  }, [alerts, filter]);
 
-  const sortedAlerts = [...filteredAlerts].sort((a, b) => {
-    if (sortBy === 'timestamp') {
+  const sortedAlerts = useMemo(() => {
+    return [...filteredAlerts].sort((a, b) => {
+      if (sortBy === 'severity') {
+        return b.severity - a.severity;
+      }
       return new Date(b.timestamp) - new Date(a.timestamp);
-    }
-    if (sortBy === 'severity') {
-      return b.severity - a.severity;
-    }
-    return 0;
-  });
+    });
+  }, [filteredAlerts, sortBy]);
 
-  const getSeverityColor = (severity) => {
-    if (severity > 0.7) return 'text-red-600 bg-red-100';
-    if (severity > 0.4) return 'text-yellow-600 bg-yellow-100';
-    return 'text-blue-600 bg-blue-100';
-  };
-
-  const getSeverityLabel = (severity) => {
-    if (severity > 0.7) return 'Critical';
-    if (severity > 0.4) return 'Warning';
-    return 'Info';
-  };
-
-  const formatTimeAgo = (timestamp) => {
-    const now = new Date();
-    const alertTime = new Date(timestamp);
-    const diffMs = now - alertTime;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffDays > 0) return `${diffDays}d ago`;
-    if (diffHours > 0) return `${diffHours}h ago`;
-    if (diffMins > 0) return `${diffMins}m ago`;
-    return 'Just now';
-  };
-
-  const getPestIcon = (pestType) => {
-    switch (pestType) {
-      case 'bark_beetle': return '🐛';
-      case 'aphid': return '🦗';
-      case 'caterpillar': return '🐛';
-      case 'grasshopper': return '🦗';
-      default: return '🐛';
-    }
-  };
-
-  const getPestName = (pestType) => {
-    return pestType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-  };
+  const uniquePests = useMemo(() => {
+    const pests = new Set();
+    alerts.forEach((alert) => {
+      alert.pestTypes?.forEach((pest) => pests.add(pest.type));
+    });
+    return pests.size;
+  }, [alerts]);
 
   return (
-    <div className="alert-center">
-      <div className="card-header mb-6">
-        <div className="flex justify-between items-center">
+    <section className="space-y-6">
+      <div className="card card--flat flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-danger-500/10 text-lg text-danger-400">
+            <AlertTriangle className="h-5 w-5" />
+          </span>
           <div>
-            <h3 className="card-title">Alert Center</h3>
-            <p className="card-subtitle">Real-time pest detection alerts and notifications</p>
+            <h3 className="text-lg font-semibold text-text">Alert Center</h3>
+            <p className="text-sm text-text-muted">Real-time bioacoustic detections and response priorities</p>
           </div>
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-red-500" />
-            <span className="text-lg font-semibold text-red-600">{alerts.length}</span>
-            <span className="text-sm text-gray-600">alerts</span>
-          </div>
+        </div>
+        <div className="ml-auto flex items-center gap-2 text-sm text-text-muted">
+          <span className="rounded-full border border-danger-500/40 bg-danger-500/10 px-3 py-1 text-danger-400">
+            {alerts.length} active
+          </span>
+          <span className="hidden sm:inline">alerts monitored</span>
         </div>
       </div>
 
-      {/* Filters and Controls */}
-      <div className="card mb-6">
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Filter:</span>
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Alerts</option>
-              <option value="critical">Critical</option>
-              <option value="warning">Warning</option>
-            </select>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-700">Sort by:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="timestamp">Time</option>
-              <option value="severity">Severity</option>
-            </select>
-          </div>
-
-          <div className="ml-auto text-sm text-gray-600">
-            Showing {sortedAlerts.length} of {alerts.length} alerts
-          </div>
+      <div className="card card--flat flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2 text-sm text-text-muted">
+          <Filter className="h-4 w-4" />
+          <span className="font-medium">Filter</span>
+          <select value={filter} onChange={(event) => setFilter(event.target.value)}>
+            <option value="all">All alerts</option>
+            <option value="critical">Critical only</option>
+            <option value="warning">Warnings</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-text-muted">
+          <span className="font-medium">Sort</span>
+          <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+            <option value="timestamp">Most recent</option>
+            <option value="severity">Highest severity</option>
+          </select>
+        </div>
+        <div className="ml-auto text-sm text-text-muted">
+          Showing {sortedAlerts.length} of {alerts.length}
         </div>
       </div>
 
-      {/* Alerts List */}
-      <div className="space-y-4">
-        {sortedAlerts.length === 0 ? (
-          <div className="card text-center py-12">
-            <AlertTriangle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h4 className="text-lg font-medium text-gray-900 mb-2">No Alerts</h4>
-            <p className="text-gray-600">
-              {alerts.length === 0 
-                ? "No alerts have been generated yet. The system is monitoring for pest activity."
-                : "No alerts match the current filter criteria."
-              }
-            </p>
-          </div>
-        ) : (
-          sortedAlerts.map((alert) => (
-            <div key={alert.id} className="card border-l-4 border-l-red-500 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${getSeverityColor(alert.severity)}`}>
-                      {getSeverityLabel(alert.severity)}
+      {sortedAlerts.length === 0 ? (
+        <div className="card card--flat flex flex-col items-center gap-3 py-12 text-center">
+          <AlertTriangle className="h-10 w-10 text-text-muted/60" />
+          <h4 className="text-lg font-semibold text-text">No alerts</h4>
+          <p className="max-w-sm text-sm text-text-muted">
+            {alerts.length === 0
+              ? 'No detections yet. Sensors are actively monitoring the field for pest activity.'
+              : 'Try relaxing the filters to see additional detections.'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {sortedAlerts.map((alert) => {
+            const tone = severityTone(alert.severity);
+            return (
+              <div
+                key={alert.id}
+                className={`card border-l-4 ${tone.rail} transition hover:border-l-[6px]`}
+              >
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-text-muted">
+                      <span className={`status-badge ${tone.badge}`}>
+                        {tone.label}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        {formatTimeAgo(alert.timestamp)}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-4 w-4" />
+                        Mic #{alert.microphoneId}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <Clock className="w-4 h-4" />
-                      {formatTimeAgo(alert.timestamp)}
-                    </div>
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <MapPin className="w-4 h-4" />
-                      Mic #{alert.microphoneId}
-                    </div>
-                  </div>
 
-                  <h4 className="font-semibold text-gray-900 mb-2">
-                    Pest Detection Alert
-                  </h4>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <h5 className="text-sm font-medium text-gray-700 mb-2">Detected Pests:</h5>
-                      <div className="space-y-1">
-                        {alert.pestTypes.map((pest, idx) => (
-                          <div key={idx} className="flex items-center gap-2">
-                            <span className="text-lg">{getPestIcon(pest.type)}</span>
-                            <span className="text-sm font-medium">{getPestName(pest.type)}</span>
-                            <span className="text-xs text-gray-600">
-                              ({(pest.confidence * 100).toFixed(1)}% confidence)
-                            </span>
+                    <div className="space-y-3">
+                      <h4 className="text-base font-semibold text-text">Pest detection alert</h4>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="rounded-2xl border border-border/20 bg-surface-150/60 p-4">
+                          <h5 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                            Detected pests
+                          </h5>
+                          <div className="mt-3 space-y-2 text-sm">
+                            {alert.pestTypes?.map((pest, index) => (
+                              <div key={index} className="flex items-center justify-between gap-3">
+                                <span className="flex items-center gap-2">
+                                  <span className="text-base">{pestIcon(pest.type)}</span>
+                                  <span className="font-medium text-text">{getPestName(pest.type)}</span>
+                                </span>
+                                <span className="text-xs text-text-muted">
+                                  {(pest.confidence * 100).toFixed(1)}%
+                                </span>
+                              </div>
+                            )) || (
+                              <span className="text-sm text-text-muted">No pest metadata</span>
+                            )}
                           </div>
-                        ))}
+                        </div>
+
+                        <div className="rounded-2xl border border-border/20 bg-surface-150/60 p-4">
+                          <h5 className="text-xs font-semibold uppercase tracking-wide text-text-muted">Alert metrics</h5>
+                          <div className="mt-3 space-y-2 text-sm text-text">
+                            <div className="flex items-center justify-between">
+                              <span className="text-text-muted">Detection confidence</span>
+                              <span className="font-semibold">{(alert.confidence * 100).toFixed(1)}%</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-text-muted">Severity level</span>
+                              <span className="font-semibold">{(alert.severity * 100).toFixed(0)}%</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-text-muted">Coordinates</span>
+                              <span className="font-semibold">
+                                {alert.location
+                                  ? `${alert.location.lat.toFixed(4)}, ${alert.location.lng.toFixed(4)}`
+                                  : 'Unknown'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    <div>
-                      <h5 className="text-sm font-medium text-gray-700 mb-2">Alert Details:</h5>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Overall Confidence:</span>
-                          <span className="font-medium">{(alert.confidence * 100).toFixed(1)}%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Severity Level:</span>
-                          <span className="font-medium">{(alert.severity * 100).toFixed(0)}%</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Location:</span>
-                          <span className="font-medium">
-                            {alert.location ? `${alert.location.lat.toFixed(4)}, ${alert.location.lng.toFixed(4)}` : 'Unknown'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                    <p className="text-xs text-text-subtle">
+                      Alert ID {alert.id} · Generated {new Date(alert.timestamp).toLocaleString()}
+                    </p>
                   </div>
 
-                  <div className="text-xs text-gray-500">
-                    Alert ID: {alert.id} • Generated: {new Date(alert.timestamp).toLocaleString()}
+                  <div className="flex flex-row items-center gap-2 md:flex-col md:items-end">
+                    <button type="button" className="btn btn-secondary px-4 py-2 text-xs">
+                      View details
+                    </button>
+                    <button type="button" className="btn btn-danger px-4 py-2 text-xs">
+                      Mark resolved
+                    </button>
                   </div>
-                </div>
-
-                <div className="ml-4 flex flex-col gap-2">
-                  <button className="btn btn-secondary text-xs px-3 py-1">
-                    View Details
-                  </button>
-                  <button className="btn btn-danger text-xs px-3 py-1">
-                    Mark Resolved
-                  </button>
                 </div>
               </div>
-            </div>
-          ))
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
-      {/* Alert Statistics */}
       {alerts.length > 0 && (
-        <div className="card mt-6">
-          <div className="card-header">
-            <h4 className="card-title">Alert Statistics</h4>
+        <div className="card card--flat grid gap-6 sm:grid-cols-3">
+          <div className="rounded-2xl border border-danger-500/20 bg-danger-500/10 p-4 text-center">
+            <p className="text-2xl font-bold text-danger-400">
+              {alerts.filter((alert) => alert.severity > 0.7).length}
+            </p>
+            <p className="text-sm text-danger-100/70">Critical alerts</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">
-                {alerts.filter(a => a.severity > 0.7).length}
-              </div>
-              <div className="text-sm text-gray-600">Critical Alerts</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">
-                {alerts.filter(a => a.severity <= 0.7 && a.severity > 0.4).length}
-              </div>
-              <div className="text-sm text-gray-600">Warning Alerts</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                {new Set(alerts.map(a => a.pestTypes.map(p => p.type)).flat()).size}
-              </div>
-              <div className="text-sm text-gray-600">Unique Pest Types</div>
-            </div>
+          <div className="rounded-2xl border border-warning-500/20 bg-warning-500/10 p-4 text-center">
+            <p className="text-2xl font-bold text-warning-400">
+              {alerts.filter((alert) => alert.severity <= 0.7 && alert.severity > 0.4).length}
+            </p>
+            <p className="text-sm text-warning-100/70">Warnings</p>
+          </div>
+          <div className="rounded-2xl border border-brand-500/20 bg-brand-500/10 p-4 text-center">
+            <p className="text-2xl font-bold text-brand-300">{uniquePests}</p>
+            <p className="text-sm text-brand-100/70">Unique pest types</p>
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 };
 

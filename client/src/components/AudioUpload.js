@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from '../config/axios';
-import { Upload, Mic, FileAudio, CheckCircle, AlertCircle, Loader } from 'lucide-react';
+import { Upload, Mic, FileAudio, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AudioUpload = ({ fieldData, onUploadComplete }) => {
@@ -31,7 +31,7 @@ const AudioUpload = ({ fieldData, onUploadComplete }) => {
 
   useEffect(() => {
     if (fieldData?.fieldLayout?.microphones) {
-      const mics = fieldData.fieldLayout.microphones.map(m => ({
+      const mics = fieldData.fieldLayout.microphones.map((m) => ({
         id: m.id,
         name: m.name || `Microphone ${m.id}`
       }));
@@ -47,19 +47,16 @@ const AudioUpload = ({ fieldData, onUploadComplete }) => {
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('audio/')) {
         toast.error('Please select an audio file');
         return;
       }
-      
-      // Validate file size (max 10MB)
+
       if (file.size > 10 * 1024 * 1024) {
         toast.error('File size must be less than 10MB');
         return;
       }
-      
-      // Clear previous results when selecting a new file
+
       setSelectedFile(file);
       setAnalysisResult(null);
       setUploadProgress(0);
@@ -70,7 +67,6 @@ const AudioUpload = ({ fieldData, onUploadComplete }) => {
     event.preventDefault();
     const file = event.dataTransfer.files[0];
     if (file) {
-      // Clear previous results when dropping a new file
       setSelectedFile(file);
       setAnalysisResult(null);
       setUploadProgress(0);
@@ -86,7 +82,7 @@ const AudioUpload = ({ fieldData, onUploadComplete }) => {
       toast.error('Please select an audio file');
       return;
     }
-    
+
     if (!microphoneId || registeredMicrophones.length === 0) {
       toast.error('Please register a microphone first');
       return;
@@ -104,9 +100,8 @@ const AudioUpload = ({ fieldData, onUploadComplete }) => {
     }
 
     try {
-      // Simulate progress
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
+        setUploadProgress((prev) => {
           if (prev >= 90) {
             clearInterval(progressInterval);
             return prev;
@@ -117,43 +112,36 @@ const AudioUpload = ({ fieldData, onUploadComplete }) => {
 
       const response = await axios.post('/api/upload-audio', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'multipart/form-data'
         },
         onUploadProgress: (progressEvent) => {
           const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setUploadProgress(progress);
-        },
+        }
       });
 
       clearInterval(progressInterval);
       setUploadProgress(100);
-      
       setAnalysisResult(response.data.analysis);
-      
+
       if (establishBaseline && response.data.baselineUpdated) {
         toast.success('Audio analyzed and baseline updated successfully!');
       } else {
         toast.success('Audio analysis completed successfully!');
       }
-      
-      if (onUploadComplete) {
-        onUploadComplete();
-      }
-      
-      // Keep results visible - only reset when new file is selected
-      // Clear the selected file to allow new uploads but keep results
+
+      onUploadComplete?.();
+
       setSelectedFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-
     } catch (error) {
       console.error('Upload error:', error);
       const errorMessage = error.response?.data?.error || error.message || 'Unknown error';
       toast.error(`Failed to analyze audio file: ${errorMessage}`);
       setUploadProgress(0);
-      
-      // Still show some result even if analysis fails
+
       setAnalysisResult({
         timestamp: new Date().toISOString(),
         confidence: 0.1,
@@ -177,13 +165,13 @@ const AudioUpload = ({ fieldData, onUploadComplete }) => {
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   };
 
-  const getConfidenceColor = (confidence) => {
-    if (confidence > 0.7) return 'text-red-600 bg-red-100';
-    if (confidence > 0.4) return 'text-yellow-600 bg-yellow-100';
-    return 'text-green-600 bg-green-100';
+  const getConfidenceTone = (confidence) => {
+    if (confidence > 0.7) return 'border-danger-500/40 bg-danger-500/15 text-danger-500';
+    if (confidence > 0.4) return 'border-warning-500/40 bg-warning-500/15 text-warning-500';
+    return 'border-success-500/40 bg-success-500/15 text-success-500';
   };
 
   const getConfidenceLabel = (confidence) => {
@@ -193,50 +181,52 @@ const AudioUpload = ({ fieldData, onUploadComplete }) => {
   };
 
   return (
-    <div className="audio-upload">
-      <div className="card-header mb-6">
-        <h3 className="card-title">Audio Analysis Upload</h3>
-        <p className="card-subtitle">Upload audio recordings for bioacoustic pest detection analysis</p>
-      </div>
+    <section className="flex flex-col gap-6">
+      <header className="flex flex-col gap-1">
+        <h3 className="text-xl font-semibold text-text">Audio Analysis Upload</h3>
+        <p className="max-w-2xl text-sm text-text-muted">
+          Upload recordings to trigger real-time bioacoustic analysis and baseline updates.
+        </p>
+      </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Upload Section */}
-        <div className="space-y-6">
-          {/* File Selection */}
-          <div className="card">
-            <div className="card-header">
-              <h4 className="card-title">Select Audio File</h4>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+        <div className="flex flex-col gap-6">
+          <div className="card space-y-6">
+            <div>
+              <h4 className="text-lg font-semibold text-text">Select Audio File</h4>
+              <p className="text-sm text-text-muted">Drag &amp; drop or browse to upload an audio sample.</p>
             </div>
-            
+
             <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                selectedFile 
-                  ? 'border-green-300 bg-green-50' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
+              className={`flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed px-6 py-10 text-center transition ${
+                selectedFile
+                  ? 'border-success-500/50 bg-success-500/10'
+                  : 'border-border/15 bg-surface-200/20 hover:border-border/25 hover:bg-surface-100/60'
+              }`}
             >
               {selectedFile ? (
                 <div className="space-y-3">
-                  <CheckCircle className="w-12 h-12 text-green-500 mx-auto" />
+                  <CheckCircle2 className="mx-auto h-12 w-12 text-success-500" />
                   <div>
-                    <h5 className="font-medium text-gray-900">{selectedFile.name}</h5>
-                    <p className="text-sm text-gray-600">{formatFileSize(selectedFile.size)}</p>
+                    <p className="truncate text-sm font-medium text-text">{selectedFile.name}</p>
+                    <p className="text-xs text-text-muted/80">{formatFileSize(selectedFile.size)}</p>
                   </div>
                   <button
+                    type="button"
                     onClick={() => setSelectedFile(null)}
-                    className="text-sm text-red-600 hover:text-red-700"
+                    className="text-sm font-medium text-danger-500 transition hover:text-danger-500/80"
                   >
                     Remove file
                   </button>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <Upload className="w-12 h-12 text-gray-400 mx-auto" />
-                  <div>
-                    <p className="text-lg font-medium text-gray-900">Drop audio file here</p>
-                    <p className="text-sm text-gray-600">or click to browse</p>
+                <div className="space-y-4">
+                  <Upload className="mx-auto h-12 w-12 text-text-subtle/60" />
+                  <div className="space-y-1">
+                    <p className="text-base font-semibold text-text">Drop audio file here</p>
+                    <p className="text-sm text-text-muted">or click the button below to browse</p>
                   </div>
                   <input
                     ref={fileInputRef}
@@ -246,11 +236,8 @@ const AudioUpload = ({ fieldData, onUploadComplete }) => {
                     className="hidden"
                     id="audio-file-input"
                   />
-                  <label
-                    htmlFor="audio-file-input"
-                    className="btn btn-primary cursor-pointer"
-                  >
-                    <FileAudio className="w-4 h-4" />
+                  <label htmlFor="audio-file-input" className="btn-primary inline-flex cursor-pointer gap-2">
+                    <FileAudio className="h-4 w-4" />
                     Choose File
                   </label>
                 </div>
@@ -258,278 +245,292 @@ const AudioUpload = ({ fieldData, onUploadComplete }) => {
             </div>
           </div>
 
-          {/* Microphone Selection */}
-          <div className="card">
-            <div className="card-header">
-              <h4 className="card-title">Microphone Location</h4>
+          <div className="card space-y-6">
+            <div>
+              <h4 className="text-lg font-semibold text-text">Microphone Location</h4>
+              <p className="text-sm text-text-muted">Route the analysis to a registered field microphone.</p>
             </div>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Mic className="w-4 h-4 text-gray-500" />
-                <span className="text-sm font-medium">Select microphone:</span>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-sm text-text-muted">
+                <Mic className="h-4 w-4 text-text-subtle/70" />
+                Select microphone
               </div>
               {registeredMicrophones.length === 0 ? (
-                <div className="p-4 border border-yellow-300 bg-yellow-50 rounded-md">
-                  <p className="text-sm text-yellow-800">
-                    No microphones registered. Please register an audio device first.
-                  </p>
+                <div className="rounded-2xl border border-warning-500/40 bg-warning-500/10 p-4 text-sm text-warning-500">
+                  No microphones registered. Please register an audio device first.
                 </div>
               ) : (
                 <>
                   <select
                     value={microphoneId}
                     onChange={(e) => setMicrophoneId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-xl border border-border/15 bg-surface-100/60 px-3 py-2 text-sm text-text focus:border-brand-500/40 focus:outline-none focus:ring-4 focus:ring-brand-500/10"
                   >
-                    {registeredMicrophones.map(mic => (
+                    {registeredMicrophones.map((mic) => (
                       <option key={mic.id} value={mic.id}>
                         {mic.name || `Microphone ${mic.id}`}
                       </option>
                     ))}
                   </select>
-                  
-                  {/* Baseline Establishment Option */}
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <label className="flex items-center gap-2 cursor-pointer">
+
+                  <div className="rounded-2xl border border-border/10 bg-surface-200/20 p-4">
+                    <label className="flex items-start gap-3 text-sm text-text">
                       <input
                         type="checkbox"
                         checked={establishBaseline}
                         onChange={(e) => setEstablishBaseline(e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="mt-1 h-4 w-4 rounded border-border/40 text-brand-500 focus:ring-brand-500/40"
                       />
-                      <span className="text-sm font-medium text-gray-700">
-                        Use this audio to establish/update baseline
+                      <span>
+                        <span className="font-medium text-text">Use this audio to update baseline</span>
+                        <p className="mt-1 text-xs text-text-muted">
+                          Update the acoustic profile for this microphone using this recording. Recommended
+                          after environmental changes.
+                        </p>
                       </span>
                     </label>
-                    <p className="text-xs text-gray-500 mt-1 ml-6">
-                      Checking this will update the baseline profile for the selected microphone using this audio clip
-                    </p>
                   </div>
                 </>
               )}
             </div>
           </div>
 
-          {/* Upload Button */}
-          <div className="card">
+          <div className="card space-y-4">
             <button
+              type="button"
               onClick={uploadAudio}
               disabled={!selectedFile || isUploading}
-              className={`btn w-full ${
-                !selectedFile || isUploading 
-                  ? 'btn-secondary opacity-50 cursor-not-allowed' 
-                  : 'btn-primary'
+              className={`btn btn-primary inline-flex w-full items-center justify-center gap-2 ${
+                !selectedFile || isUploading ? 'cursor-not-allowed opacity-60' : ''
               }`}
             >
               {isUploading ? (
                 <>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  Analyzing Audio...
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Analyzing audio…
                 </>
               ) : (
                 <>
-                  <Upload className="w-4 h-4" />
-                  Upload & Analyze
+                  <Upload className="h-5 w-5" />
+                  Upload &amp; Analyze
                 </>
               )}
             </button>
 
-            {/* Progress Bar */}
             {isUploading && (
-              <div className="mt-4">
-                <div className="flex justify-between text-sm text-gray-600 mb-1">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-medium text-text-muted">
                   <span>Upload Progress</span>
                   <span>{Math.round(uploadProgress)}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-surface-200/40">
                   <div
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    className="h-full rounded-full bg-brand-500 transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
-                  ></div>
+                  />
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Analysis Results */}
-        <div className="space-y-6">
+        <div className="flex flex-col gap-6">
           {analysisResult ? (
             <>
-              {/* Analysis Overview */}
-              <div className="card">
-                <div className="card-header">
-                  <h4 className="card-title">Analysis Results</h4>
+              <div className="card space-y-5">
+                <div>
+                  <h4 className="text-lg font-semibold text-text">Analysis Results</h4>
+                  <p className="text-sm text-text-muted">
+                    Snapshot of detection confidence, deviations, and processing context.
+                  </p>
                 </div>
-                <div className="space-y-4">
+
+                <div className="space-y-4 text-sm text-text">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">Detection Confidence:</span>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getConfidenceColor(analysisResult.confidence)}`}>
-                      {(analysisResult.confidence * 100).toFixed(1)}% - {getConfidenceLabel(analysisResult.confidence)}
+                    <span className="text-text-muted">Detection Confidence</span>
+                    <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getConfidenceTone(analysisResult.confidence)}`}>
+                      {(analysisResult.confidence * 100).toFixed(1)}% · {getConfidenceLabel(analysisResult.confidence)}
                     </span>
                   </div>
-                  
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">Baseline Deviation:</span>
-                    <span className="text-sm">
+                    <span className="text-text-muted">Baseline Deviation</span>
+                    <span className="font-medium text-text">
                       {(analysisResult.baselineDeviation * 100).toFixed(1)}%
                     </span>
                   </div>
-                  
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">Analysis Time:</span>
-                    <span className="text-sm">
+                    <span className="text-text-muted">Analysis Time</span>
+                    <span className="font-medium text-text">
                       {new Date(analysisResult.timestamp).toLocaleTimeString()}
                     </span>
                   </div>
-                  
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">Microphone:</span>
-                    <span className="text-sm text-blue-600 font-medium">
-                      Mic #{microphoneId}
-                    </span>
+                    <span className="text-text-muted">Microphone</span>
+                    <span className="font-medium text-brand-300">Mic #{microphoneId}</span>
                   </div>
-                  
-                  
+
                   {analysisResult.modelUsed && (
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">AI Model:</span>
-                      <span className="text-sm text-blue-600 font-medium">
-                        {analysisResult.modelUsed}
-                      </span>
+                      <span className="text-text-muted">AI Model</span>
+                      <span className="font-medium text-brand-200">{analysisResult.modelUsed}</span>
                     </div>
                   )}
-                  
-                  {analysisResult.similarityScores && Object.keys(analysisResult.similarityScores).length > 0 && (
-                    <div className="mt-3">
-                      <span className="font-medium text-sm">Similarity Scores:</span>
-                      <div className="text-sm text-gray-600 mt-1 p-2 bg-blue-50 rounded">
-                        {Object.entries(analysisResult.similarityScores).map(([key, value]) => (
-                          <div key={key} className="flex justify-between">
-                            <span>{key}:</span>
-                            <span className="font-medium">{(value * 100).toFixed(1)}%</span>
-                          </div>
-                        ))}
+
+                  {analysisResult.similarityScores &&
+                    Object.keys(analysisResult.similarityScores).length > 0 && (
+                      <div>
+                        <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                          Similarity Scores
+                        </span>
+                        <div className="mt-2 space-y-2 rounded-2xl border border-brand-500/20 bg-brand-500/10 p-3 text-sm text-brand-100">
+                          {Object.entries(analysisResult.similarityScores).map(([key, value]) => (
+                            <div key={key} className="flex items-center justify-between">
+                              <span>{key}</span>
+                              <span className="font-semibold">{(value * 100).toFixed(1)}%</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  
+                    )}
+
                   {analysisResult.transcription && (
-                    <div className="mt-3">
-                      <span className="font-medium text-sm">Audio Transcription:</span>
-                      <div className="text-sm text-gray-600 mt-1 p-2 bg-gray-50 rounded">
+                    <div>
+                      <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                        Audio Transcription
+                      </span>
+                      <div className="mt-2 rounded-2xl border border-border/10 bg-surface-200/30 p-3 text-sm text-text-muted">
                         {analysisResult.transcription}
                       </div>
+                    </div>
+                  )}
+
+                  {analysisResult.error && (
+                    <div className="rounded-2xl border border-warning-500/40 bg-warning-500/10 p-3 text-xs text-warning-500">
+                      {analysisResult.error}
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Pest Detection */}
               {analysisResult.pestTypes && analysisResult.pestTypes.length > 0 ? (
-                <div className="card border-l-4 border-l-red-500">
-                  <div className="card-header">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5 text-red-500" />
-                      <h4 className="card-title text-red-700">Pest Detection Alert</h4>
-                    </div>
+                <div className="card border-l-4 border-danger-500/80 bg-danger-500/5">
+                  <div className="mb-4 flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-danger-500" />
+                    <h4 className="text-lg font-semibold text-danger-500">Pest Detection Alert</h4>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {analysisResult.pestTypes.map((pest, idx) => (
-                      <div key={idx} className="p-3 bg-red-50 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium text-red-800">
+                      <div key={idx} className="rounded-2xl border border-danger-500/30 bg-danger-500/10 p-4 text-sm text-danger-100">
+                        <div className="flex items-center justify-between text-danger-200">
+                          <span className="font-semibold tracking-wide text-danger-100">
                             {pest.type.replace('_', ' ').toUpperCase()}
                           </span>
-                          <span className="text-sm text-red-600">
-                            {(pest.confidence * 100).toFixed(1)}% confidence
-                          </span>
+                          <span>{(pest.confidence * 100).toFixed(1)}% confidence</span>
                         </div>
-                        <div className="text-sm text-red-700">
-                          Severity: {(pest.severity * 100).toFixed(0)}%
-                        </div>
+                        <p className="mt-2 text-xs text-danger-200">
+                          Severity score: {(pest.severity * 100).toFixed(0)}%
+                        </p>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : (
-                <div className="card border-l-4 border-l-green-500">
-                  <div className="card-header">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                      <h4 className="card-title text-green-700">No Pests Detected</h4>
-                    </div>
+                <div className="card border-l-4 border-success-500/80 bg-success-500/5">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-success-500" />
+                    <h4 className="text-lg font-semibold text-success-500">No Pests Detected</h4>
                   </div>
-                  <p className="text-green-700">
-                    The audio analysis indicates a healthy ecosystem with no significant pest activity detected.
+                  <p className="mt-2 text-sm text-success-500/90">
+                    The audio analysis indicates a healthy soundscape with no significant pest activity.
                   </p>
                 </div>
               )}
 
-              {/* Acoustic Features */}
               <div className="card">
-                <div className="card-header">
-                  <h4 className="card-title">Acoustic Features</h4>
+                <div className="mb-4">
+                  <h4 className="text-lg font-semibold text-text">Acoustic Features</h4>
+                  <p className="text-sm text-text-muted">
+                    Numeric features extracted from the recording for model introspection.
+                  </p>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-sm text-gray-600">Frequency:</span>
-                    <div className="font-medium">{analysisResult.acousticFeatures.frequency.toFixed(0)} Hz</div>
+                <div className="grid grid-cols-2 gap-4 text-sm text-text">
+                  <div className="rounded-2xl border border-border/10 bg-surface-200/30 p-4">
+                    <span className="text-xs uppercase tracking-wide text-text-muted">Frequency</span>
+                    <div className="mt-2 text-lg font-semibold">
+                      {analysisResult.acousticFeatures.frequency.toFixed(0)} Hz
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-sm text-gray-600">Amplitude:</span>
-                    <div className="font-medium">{analysisResult.acousticFeatures.amplitude.toFixed(3)}</div>
+                  <div className="rounded-2xl border border-border/10 bg-surface-200/30 p-4">
+                    <span className="text-xs uppercase tracking-wide text-text-muted">Amplitude</span>
+                    <div className="mt-2 text-lg font-semibold">
+                      {analysisResult.acousticFeatures.amplitude.toFixed(3)}
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-sm text-gray-600">Spectral Centroid:</span>
-                    <div className="font-medium">{analysisResult.acousticFeatures.spectralCentroid.toFixed(0)} Hz</div>
+                  <div className="rounded-2xl border border-border/10 bg-surface-200/30 p-4">
+                    <span className="text-xs uppercase tracking-wide text-text-muted">Spectral Centroid</span>
+                    <div className="mt-2 text-lg font-semibold">
+                      {analysisResult.acousticFeatures.spectralCentroid.toFixed(0)} Hz
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-sm text-gray-600">Zero Crossing Rate:</span>
-                    <div className="font-medium">{analysisResult.acousticFeatures.zeroCrossingRate.toFixed(3)}</div>
+                  <div className="rounded-2xl border border-border/10 bg-surface-200/30 p-4">
+                    <span className="text-xs uppercase tracking-wide text-text-muted">
+                      Zero Crossing Rate
+                    </span>
+                    <div className="mt-2 text-lg font-semibold">
+                      {analysisResult.acousticFeatures.zeroCrossingRate.toFixed(3)}
+                    </div>
                   </div>
                 </div>
               </div>
             </>
           ) : (
-            <div className="card text-center py-12">
-              <FileAudio className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h4 className="text-lg font-medium text-gray-900 mb-2">No Analysis Yet</h4>
-              <p className="text-gray-600">
-                Upload an audio file to see bioacoustic analysis results and pest detection information.
-              </p>
+            <div className="card flex flex-col items-center justify-center gap-4 py-12 text-center">
+              <FileAudio className="h-12 w-12 text-text-subtle/60" />
+              <div className="space-y-2">
+                <h4 className="text-lg font-semibold text-text">Awaiting Audio Upload</h4>
+                <p className="text-sm text-text-muted">
+                  Upload a recording to view model predictions and acoustic metrics.
+                </p>
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="card mt-6">
-        <div className="card-header">
-          <h4 className="card-title">Upload Instructions</h4>
+      <div className="card">
+        <div className="mb-6">
+          <h4 className="text-lg font-semibold text-text">Upload Guidelines</h4>
+          <p className="text-sm text-text-muted">
+            Follow these recommendations to ensure clean, reliable model output.
+          </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h5 className="font-medium text-gray-900 mb-2">Supported Formats:</h5>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>• WAV (recommended)</li>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="rounded-2xl border border-border/10 bg-surface-200/20 p-5">
+            <h5 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
+              Supported Formats
+            </h5>
+            <ul className="mt-3 space-y-2 text-sm text-text">
+              <li>• WAV (preferred)</li>
               <li>• MP3</li>
               <li>• M4A</li>
               <li>• FLAC</li>
             </ul>
           </div>
-          <div>
-            <h5 className="font-medium text-gray-900 mb-2">Best Practices:</h5>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>• Record in quiet conditions</li>
-              <li>• Minimum 10 seconds duration</li>
-              <li>• Maximum 10MB file size</li>
-              <li>• Clear audio without distortion</li>
+          <div className="rounded-2xl border border-border/10 bg-surface-200/20 p-5">
+            <h5 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
+              Best Practices
+            </h5>
+            <ul className="mt-3 space-y-2 text-sm text-text">
+              <li>• Record in quiet, consistent conditions</li>
+              <li>• Minimum 10 seconds per sample</li>
+              <li>• Maximum 10MB upload size</li>
+              <li>• Avoid clipping or distorted audio</li>
             </ul>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

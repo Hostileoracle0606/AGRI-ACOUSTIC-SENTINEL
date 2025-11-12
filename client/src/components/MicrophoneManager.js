@@ -177,55 +177,39 @@ const MicrophoneManager = ({ onMicrophoneRegistered }) => {
 
   if (isLoading) {
     return (
-      <div style={{ textAlign: 'center', padding: 'var(--spacing-lg)' }}>
-        <div className="loading-spinner" style={{ margin: '0 auto' }}></div>
-        <p style={{ marginTop: 'var(--spacing-sm)', color: 'var(--text-secondary)' }}>Loading audio devices...</p>
+      <div className="loading-container">
+        <div className="loading-spinner" />
+        <p>Loading audio devices…</p>
       </div>
     );
   }
 
   return (
-    <div className="microphone-manager">
-      <div className="card-header mb-6" style={{ border: 'none', paddingBottom: 0, marginBottom: 'var(--spacing-md)' }}>
-        <p className="card-subtitle">Detect and register audio input devices for field monitoring</p>
+    <section className="flex flex-col gap-6">
+      <div className="space-y-2">
+        <p className="text-sm text-text-muted">
+          Detect and register audio input devices for field monitoring.
+        </p>
       </div>
 
-      {/* Browser Microphone Permission Alert */}
       {microphonePermission === false && (
-        <div className="mb-6 p-4 rounded-lg" style={{
-          background: 'rgba(255, 204, 0, 0.1)',
-          border: '1px solid rgba(255, 204, 0, 0.3)'
-        }}>
+        <div className="rounded-2xl border border-warning-500/40 bg-warning-500/10 p-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 mt-0.5" style={{ color: 'var(--accent-yellow)' }} />
-            <div className="flex-1">
-              <h4 className="font-semibold mb-1" style={{ color: 'var(--accent-yellow)' }}>Microphone Access Required</h4>
-              <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>
-                This application needs microphone access to record audio from your device. 
-                Clicking the button below will trigger a system alert requesting permission.
-              </p>
+            <AlertTriangle className="h-5 w-5 text-warning-400" />
+            <div className="flex-1 space-y-3">
+              <div>
+                <h4 className="text-base font-semibold text-warning-400">Microphone Access Required</h4>
+                <p className="text-sm text-text-muted">
+                  Grant microphone access so the app can capture real-time audio streams from your device.
+                </p>
+              </div>
               <button
+                type="button"
                 onClick={handleRequestMicrophonePermission}
                 disabled={isRequestingPermission}
-                className="px-4 py-2 rounded-md disabled:opacity-50"
-                style={{
-                  background: 'var(--accent-yellow)',
-                  color: 'var(--bg-primary)',
-                  border: 'none',
-                  cursor: isRequestingPermission ? 'not-allowed' : 'pointer',
-                  fontWeight: 500,
-                  transition: 'var(--transition-fast)'
-                }}
-                onMouseEnter={(e) => {
-                  if (!isRequestingPermission) {
-                    e.target.style.opacity = '0.9';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.opacity = '1';
-                }}
+                className="btn btn-primary max-w-xs disabled:opacity-60"
               >
-                {isRequestingPermission ? 'Requesting...' : 'Request Microphone Access'}
+                {isRequestingPermission ? 'Requesting…' : 'Request Microphone Access'}
               </button>
             </div>
           </div>
@@ -233,65 +217,45 @@ const MicrophoneManager = ({ onMicrophoneRegistered }) => {
       )}
 
       {microphonePermission === true && (
-        <div className="mb-6 p-4 rounded-lg" style={{
-          background: 'rgba(48, 209, 88, 0.1)',
-          border: '1px solid rgba(48, 209, 88, 0.3)'
-        }}>
-          <div className="flex items-center gap-2">
-            <Mic className="w-5 h-5" style={{ color: 'var(--accent-green)' }} />
-            <p className="text-sm" style={{ color: 'var(--accent-green)' }}>Microphone access granted</p>
+        <div className="rounded-2xl border border-success-500/40 bg-success-500/10 p-4">
+          <div className="flex items-center gap-2 text-sm text-success-400">
+            <Mic className="h-5 w-5" />
+            Microphone access granted
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Audio Devices List */}
-        <div className="card">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="card space-y-4">
           <div className="card-header">
             <h4 className="card-title flex items-center gap-2">
-              <Radio className="w-5 h-5" />
+              <Radio className="h-5 w-5" />
               Available Audio Devices
             </h4>
           </div>
           <div className="space-y-3">
             {audioDevices.length === 0 ? (
-              <p className="text-center py-4" style={{ color: 'var(--text-secondary)' }}>No audio devices detected</p>
+              <p className="py-6 text-center text-sm text-text-muted">No audio devices detected</p>
             ) : (
-              audioDevices.map((device, index) => (
+              audioDevices.map((device) => (
                 <div
                   key={device.id}
-                  className="flex items-center justify-between p-3 rounded-lg"
-                  style={{
-                    border: '1px solid var(--border-color)',
-                    background: 'var(--bg-card)'
-                  }}
+                  className="flex items-center justify-between rounded-2xl border border-border-subtle bg-surface-150/70 px-4 py-3"
                 >
                   <div className="flex items-center gap-3">
-                    <Mic className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+                    <Mic className="h-4 w-4 text-text-muted" />
                     <div>
-                      <p className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{device.label}</p>
-                      <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{device.platform} • {device.id}</p>
+                      <p className="text-sm font-semibold text-text">{device.label}</p>
+                      <p className="text-xs text-text-muted">{device.platform} • {device.id}</p>
                     </div>
                   </div>
                   <button
+                    type="button"
                     onClick={() => {
-                      setRegisterForm(prev => ({ ...prev, deviceId: device.id, name: device.label }));
+                      setRegisterForm((prev) => ({ ...prev, deviceId: device.id, name: device.label }));
                       setShowRegisterForm(true);
                     }}
-                    className="px-3 py-1 text-xs rounded"
-                    style={{
-                      background: 'var(--accent-blue)',
-                      color: 'white',
-                      border: 'none',
-                      cursor: 'pointer',
-                      transition: 'var(--transition-fast)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = 'var(--accent-blue-hover)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = 'var(--accent-blue)';
-                    }}
+                    className="btn btn-primary px-3 py-1 text-xs"
                   >
                     Register
                   </button>
@@ -299,90 +263,61 @@ const MicrophoneManager = ({ onMicrophoneRegistered }) => {
               ))
             )}
             <button
+              type="button"
               onClick={loadAudioDevices}
-              className="w-full px-4 py-2 text-sm rounded-md flex items-center justify-center gap-2"
-              style={{
-                border: '1px solid var(--border-color)',
-                background: 'var(--bg-card)',
-                color: 'var(--text-primary)',
-                cursor: 'pointer',
-                transition: 'var(--transition-fast)'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.background = 'var(--bg-card-hover)';
-                e.target.style.borderColor = 'var(--border-hover)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = 'var(--bg-card)';
-                e.target.style.borderColor = 'var(--border-color)';
-              }}
+              className="btn btn-secondary w-full"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="h-4 w-4" />
               Scan for More Devices
             </button>
           </div>
         </div>
 
-        {/* Registered Microphones */}
-        <div className="card">
+        <div className="card space-y-4">
           <div className="card-header">
             <h4 className="card-title flex items-center gap-2">
-              <Mic className="w-5 h-5" />
+              <Mic className="h-5 w-5" />
               Registered Microphones
             </h4>
           </div>
           <div className="space-y-3">
             {registeredMicrophones.length === 0 ? (
-              <div className="text-center py-8">
-                <Mic className="w-12 h-12 mx-auto mb-3" style={{ color: 'var(--text-tertiary)' }} />
-                <p style={{ color: 'var(--text-secondary)' }}>No microphones registered yet</p>
-                <p className="text-sm mt-2" style={{ color: 'var(--text-tertiary)' }}>Register an audio device to start monitoring</p>
+              <div className="flex flex-col items-center gap-3 py-10 text-center text-sm text-text-muted">
+                <Mic className="h-12 w-12 text-text-subtle/60" />
+                <div className="space-y-1">
+                  <p className="text-text">No microphones registered yet</p>
+                  <p>Register an audio device to start monitoring.</p>
+                </div>
               </div>
             ) : (
               registeredMicrophones.map((mic) => (
                 <div
                   key={mic.id}
-                  className="p-4 rounded-lg"
-                  style={{
-                    border: '1px solid var(--border-color)',
-                    background: 'var(--bg-card)'
-                  }}
+                  className="rounded-2xl border border-border-subtle bg-surface-150/70 px-4 py-3"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Mic className="w-4 h-4" style={{ color: 'var(--accent-blue)' }} />
-                      <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{mic.name || `Microphone ${mic.id}`}</span>
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-text">
+                      <Mic className="h-4 w-4 text-brand-300" />
+                      <span className="font-semibold">{mic.name || `Microphone ${mic.id}`}</span>
                     </div>
                     <button
+                      type="button"
                       onClick={() => unregisterMicrophone(mic.id)}
-                      className="p-1 rounded"
-                      style={{
-                        color: 'var(--accent-red)',
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        transition: 'var(--transition-fast)'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.background = 'rgba(255, 59, 48, 0.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.background = 'transparent';
-                      }}
+                      className="btn-ghost rounded-full p-2 text-danger-400 transition hover:bg-danger-500/10"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
-                  <div className="space-y-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  <div className="space-y-1 text-xs text-text-muted">
                     <p>Device: {mic.deviceInfo?.label || mic.deviceId}</p>
                     {mic.lat && mic.lng && (
                       <p className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
+                        <MapPin className="h-3 w-3" />
                         {mic.lat.toFixed(4)}, {mic.lng.toFixed(4)}
                       </p>
                     )}
                     {mic.registeredAt && (
-                      <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                      <p className="text-text-subtle">
                         Registered: {new Date(mic.registeredAt).toLocaleDateString()}
                       </p>
                     )}
@@ -394,14 +329,9 @@ const MicrophoneManager = ({ onMicrophoneRegistered }) => {
         </div>
       </div>
 
-      {/* Register Form Modal */}
       {showRegisterForm && (
-        <div 
-          className="fixed inset-0 flex items-center justify-center z-50"
-          style={{
-            background: 'rgba(0, 0, 0, 0.8)',
-            backdropFilter: 'blur(10px)'
-          }}
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-overlay-700 px-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setShowRegisterForm(false);
@@ -409,134 +339,81 @@ const MicrophoneManager = ({ onMicrophoneRegistered }) => {
             }
           }}
         >
-          <div 
-            className="rounded-lg p-6 max-w-md w-full mx-4"
-            style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border-color)',
-              boxShadow: 'var(--shadow-lg)'
-            }}
+          <div
+            className="modal-surface max-w-lg"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Register Microphone</h3>
-            
+            <div className="mb-6 space-y-1">
+              <h3 className="text-lg font-semibold text-text">Register Microphone</h3>
+              <p className="text-sm text-text-muted">
+                Add a friendly name and optional coordinates for precise field tracking.
+              </p>
+            </div>
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                <label className="text-xs font-semibold uppercase tracking-wide text-text-subtle">
                   Device
                 </label>
-                <input
-                  type="text"
-                  value={registerForm.deviceId}
-                  disabled
-                  className="w-full px-3 py-2 rounded-md"
-                  style={{
-                    border: '1px solid var(--border-color)',
-                    background: 'var(--bg-tertiary)',
-                    color: 'var(--text-secondary)'
-                  }}
-                />
+                <input type="text" value={registerForm.deviceId} disabled className="mt-1" />
               </div>
-              
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                <label className="text-xs font-semibold uppercase tracking-wide text-text-subtle">
                   Name (optional)
                 </label>
                 <input
                   type="text"
                   value={registerForm.name}
-                  onChange={(e) => setRegisterForm(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) => setRegisterForm((prev) => ({ ...prev, name: e.target.value }))}
                   placeholder="Microphone name"
-                  className="w-full px-3 py-2 rounded-md"
-                  style={{
-                    border: '1px solid var(--border-color)',
-                    background: 'var(--bg-card)',
-                    color: 'var(--text-primary)'
-                  }}
+                  className="mt-1"
                 />
               </div>
-              
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                  <label className="text-xs font-semibold uppercase tracking-wide text-text-subtle">
                     Latitude (optional)
                   </label>
                   <input
                     type="number"
                     step="any"
                     value={registerForm.lat}
-                    onChange={(e) => setRegisterForm(prev => ({ ...prev, lat: e.target.value }))}
+                    onChange={(e) => setRegisterForm((prev) => ({ ...prev, lat: e.target.value }))}
                     placeholder="40.7128"
-                    className="w-full px-3 py-2 rounded-md"
-                    style={{
-                      border: '1px solid var(--border-color)',
-                      background: 'var(--bg-card)',
-                      color: 'var(--text-primary)'
-                    }}
+                    className="mt-1"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                  <label className="text-xs font-semibold uppercase tracking-wide text-text-subtle">
                     Longitude (optional)
                   </label>
                   <input
                     type="number"
                     step="any"
                     value={registerForm.lng}
-                    onChange={(e) => setRegisterForm(prev => ({ ...prev, lng: e.target.value }))}
+                    onChange={(e) => setRegisterForm((prev) => ({ ...prev, lng: e.target.value }))}
                     placeholder="-74.0060"
-                    className="w-full px-3 py-2 rounded-md"
-                    style={{
-                      border: '1px solid var(--border-color)',
-                      background: 'var(--bg-card)',
-                      color: 'var(--text-primary)'
-                    }}
+                    className="mt-1"
                   />
                 </div>
               </div>
             </div>
-            
-            <div className="flex gap-3 mt-6">
+
+            <div className="mt-6 flex gap-3">
               <button
+                type="button"
+                className="btn btn-secondary flex-1"
                 onClick={() => {
                   setShowRegisterForm(false);
                   setRegisterForm({ deviceId: '', name: '', lat: '', lng: '' });
-                }}
-                className="flex-1 px-4 py-2 rounded-md"
-                style={{
-                  border: '1px solid var(--border-color)',
-                  background: 'var(--bg-tertiary)',
-                  color: 'var(--text-primary)',
-                  cursor: 'pointer',
-                  transition: 'var(--transition-fast)'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = 'var(--bg-card-hover)';
-                  e.target.style.borderColor = 'var(--border-hover)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = 'var(--bg-tertiary)';
-                  e.target.style.borderColor = 'var(--border-color)';
                 }}
               >
                 Cancel
               </button>
               <button
+                type="button"
+                className="btn btn-primary flex-1"
                 onClick={registerMicrophone}
-                className="flex-1 px-4 py-2 rounded-md"
-                style={{
-                  background: 'var(--accent-blue)',
-                  color: 'white',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'var(--transition-fast)'
-                }}
-                onMouseEnter={(e) => {
-                  e.target.style.background = 'var(--accent-blue-hover)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = 'var(--accent-blue)';
-                }}
               >
                 Register
               </button>
@@ -544,7 +421,7 @@ const MicrophoneManager = ({ onMicrophoneRegistered }) => {
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 };
 

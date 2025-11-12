@@ -105,3 +105,6 @@ After redeploying:
 
 **After setting these and redeploying, your frontend will connect to the Railway backend correctly!** 🎉
 
+
+
+
