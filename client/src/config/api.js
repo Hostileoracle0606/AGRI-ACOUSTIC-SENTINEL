@@ -15,9 +15,9 @@ const resolveFromEnv = () => {
   );
 };
 
-const resolveFromWindowConfig = () => {
+const resolveFromWindowConfig = (key = 'apiBaseUrl') => {
   if (typeof window === 'undefined') return undefined;
-  const runtimeConfig = window.__APP_CONFIG__?.apiBaseUrl;
+  const runtimeConfig = window.__APP_CONFIG__?.[key];
   return normalizeUrl(runtimeConfig);
 };
 
@@ -27,7 +27,7 @@ const getApiUrl = () => {
     return envUrl;
   }
 
-  const runtimeUrl = resolveFromWindowConfig();
+  const runtimeUrl = resolveFromWindowConfig('apiBaseUrl');
   if (runtimeUrl) {
     return runtimeUrl;
   }
@@ -52,7 +52,7 @@ const getSocketUrl = () => {
     return envUrl;
   }
 
-  const runtimeUrl = resolveFromWindowConfig();
+  const runtimeUrl = resolveFromWindowConfig('socketUrl') || resolveFromWindowConfig('apiBaseUrl');
   if (runtimeUrl) {
     return runtimeUrl;
   }

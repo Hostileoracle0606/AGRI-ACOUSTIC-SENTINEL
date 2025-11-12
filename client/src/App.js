@@ -29,50 +29,56 @@ function App() {
   const [showMicrophoneModal, setShowMicrophoneModal] = useState(false);
 
   useEffect(() => {
-    socket.on('connect', () => {
+    const handleConnect = () => {
       setConnectionStatus('connected');
       console.log('Connected to server');
-    });
+    };
 
-    socket.on('disconnect', () => {
+    const handleDisconnect = () => {
       setConnectionStatus('disconnected');
       console.log('Disconnected from server');
-    });
+    };
 
-    socket.on('fieldData', (data) => {
+    const handleFieldData = (data) => {
       setFieldData(data);
       setAlerts(data.alerts || []);
       setCurrentReadings(data.currentReadings || {});
-    });
+    };
 
-    socket.on('fieldUpdate', (readings) => {
+    const handleFieldUpdate = (readings) => {
       setCurrentReadings(readings);
-    });
+    };
 
-    socket.on('newAlert', (alert) => {
+    const handleNewAlert = (alert) => {
       setAlerts((prev) => [alert, ...prev.slice(0, 49)]);
-    });
+    };
 
-    socket.on('baselineUpdate', (data) => {
-      if (fieldData && fieldData.baseline) {
-        setFieldData((prev) => ({
+    const handleBaselineUpdate = (data) => {
+      setFieldData((prev) => {
+        if (!prev?.baseline) return prev;
+        return {
           ...prev,
           baseline: {
             ...prev.baseline,
             [data.microphoneId]: data.baseline,
           },
-        }));
-      }
-    });
+        };
+      });
+    };
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('fieldData', handleFieldData);
+    socket.on('fieldUpdate', handleFieldUpdate);
+    socket.on('newAlert', handleNewAlert);
+    socket.on('baselineUpdate', handleBaselineUpdate);
 
     const loadDataManually = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/api/field-data`);
         if (response.ok) {
           const data = await response.json();
-          setFieldData(data);
-          setAlerts(data.alerts || []);
-          setCurrentReadings(data.currentReadings || {});
+          handleFieldData(data);
           setConnectionStatus('connected');
           console.log('Data loaded manually');
         }
@@ -83,16 +89,22 @@ function App() {
     };
 
     const timeoutId = setTimeout(() => {
-      if (connectionStatus === 'connecting') {
+      if (!socket.connected) {
         loadDataManually();
       }
     }, 3000);
 
     return () => {
       clearTimeout(timeoutId);
-      socket.disconnect();
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('fieldData', handleFieldData);
+      socket.off('fieldUpdate', handleFieldUpdate);
+      socket.off('newAlert', handleNewAlert);
+      socket.off('baselineUpdate', handleBaselineUpdate);
+      socket.close();
     };
-  }, [connectionStatus, fieldData]);
+  }, []);
 
   const handleMicrophoneRegistered = () => {
     fetch(`${API_BASE_URL}/api/field-data`)
